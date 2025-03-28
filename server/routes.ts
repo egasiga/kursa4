@@ -20,7 +20,7 @@ import sharp from 'sharp';
 const execPromise = promisify(exec);
 
 /**
- * Применяет художественный стиль к изображению с использованием OpenAI API
+ * Применяет художественный стиль к изображению с использованием Hugging Face или локальных фильтров
  * @param imageBase64 - изображение в формате base64 с префиксом data:image/...;base64,
  * @param styleParams - параметры стиля
  * @returns обработанное изображение в формате base64
@@ -29,19 +29,17 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
   try {
     console.log("Применение художественного стиля:", styleParams);
     
-    // Попробуем применить стиль с использованием OpenAI API
     try {
-      // Импортируем функцию для обработки изображения с помощью AI
-      const { aiStyleImage } = await import('./ai_styler');
+      // Импортируем функцию для обработки изображения с Hugging Face
+      const { huggingFaceStyleImage } = await import('./hugging_face_styler');
       
-      // Используем OpenAI для стилизации
-      const styledImage = await aiStyleImage(imageBase64, styleParams);
-      console.log("Успешное применение стиля через OpenAI");
+      // Используем Hugging Face для стилизации или локальные фильтры
+      const styledImage = await huggingFaceStyleImage(imageBase64, styleParams);
       return styledImage;
     } catch (aiError) {
-      console.error('Ошибка при применении стиля через OpenAI, переключаемся на локальные фильтры:', aiError);
+      console.error('Ошибка при применении стиля через Hugging Face, переключаемся на локальные фильтры:', aiError);
       
-      // В случае ошибки с OpenAI, используем локальную обработку через Sharp
+      // Применяем локальную обработку через Sharp
       const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
       const styledImage = await applyArtisticFilters(imageBase64, base64Data, styleParams);
       return styledImage;
@@ -835,7 +833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Импортируем функцию, возвращающую доступные AI стили из нового модуля
       try {
-        const { getAvailableAiStyles } = await import('./ai_styler');
+        const { getAvailableAiStyles } = await import('./hugging_face_styler');
         const styles = getAvailableAiStyles();
         res.json(styles);
       } catch (aiError) {
@@ -858,7 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         // Попробуем получить из нового модуля
-        const { getAvailableAiStyles } = await import('./ai_styler');
+        const { getAvailableAiStyles } = await import('./hugging_face_styler');
         const styles = getAvailableAiStyles();
         const style = styles.find(s => s.id === id);
         
