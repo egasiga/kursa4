@@ -13,39 +13,40 @@ import { AiStyle } from '@shared/schema';
 const API_KEY = process.env.HUGGINGFACE_API_KEY;
 
 // Список поддерживаемых моделей
+// Используем реально существующие модели из Hugging Face API
 const MODELS = {
   // Картинка в стиле аниме
-  ANIME: "Ojr0wDBUTUe7rQjWJgdMwQ/caadas-real-esrgan-anime6b",
+  ANIME: "cagliostrolab/animagine-xl-3.0",
   
   // Трансформация в карандашный набросок
-  PENCIL_SKETCH: "Linaqruf/sketch_transformer",
+  PENCIL_SKETCH: "timbrooks/instruct-pix2pix",
   
   // Контурный рисунок
   LINE_DRAWING: "timbrooks/instruct-pix2pix",
   
   // Карикатура/комикс
-  CARTOON: "Ojr0wDBUTUe7rQjWJgdMwQ/sd-1-5-from-photo-to-cartoon",
+  CARTOON: "stabilityai/stable-diffusion-xl-base-1.0",
   
   // Трансформация в масляную живопись
-  OIL_PAINTING: "Ojr0wDBUTUe7rQjWJgdMwQ/artistic-oil-painting-sd",
+  OIL_PAINTING: "runwayml/stable-diffusion-v1-5",
 
   // Трансформация в стиль Ван Гога
-  VAN_GOGH: "Ojr0wDBUTUe7rQjWJgdMwQ/pytorch-van-gogh",
+  VAN_GOGH: "stabilityai/stable-diffusion-2-1",
   
   // Акварельная стилизация
-  WATERCOLOR: "Ojr0wDBUTUe7rQjWJgdMwQ/sd-1-5-watercolor-style-transfer",
+  WATERCOLOR: "stabilityai/stable-diffusion-2-1",
   
   // Пиксель-арт
-  PIXEL_ART: "Ojr0wDBUTUe7rQjWJgdMwQ/pixel-art-style-transformer",
+  PIXEL_ART: "stabilityai/stable-diffusion-xl-base-1.0",
   
   // Неоновый эффект
-  NEON: "Ojr0wDBUTUe7rQjWJgdMwQ/neon-effects-generator",
+  NEON: "stabilityai/stable-diffusion-xl-base-1.0",
   
   // Винтаж
-  VINTAGE: "Ojr0wDBUTUe7rQjWJgdMwQ/vintage-photo-style-transfer",
+  VINTAGE: "prompthero/openjourney-v4",
   
   // Нейронное искусство
-  NEURAL_ART: "Ojr0wDBUTUe7rQjWJgdMwQ/neural-style-transfer-fast",
+  NEURAL_ART: "stabilityai/stable-diffusion-xl-base-1.0",
 };
 
 /**
@@ -148,23 +149,40 @@ async function sendToHuggingFaceAPI(modelId: string, imageBuffer: Buffer, prompt
   try {
     let payload: any = {};
     
-    // Для моделей, которые поддерживают prompt вместе с изображением
-    if (modelId.includes('instruct-pix2pix') || modelId.includes('sd-1-5')) {
+    // Для моделей Stable Diffusion (Text-to-Image) и других генеративных моделей
+    if (modelId.includes('stable-diffusion') || modelId.includes('openjourney') || modelId.includes('animagine')) {
+      // Эти модели требуют текстовый запрос (промпт) и опционально изображение для img2img
+      payload = {
+        inputs: prompt || "Transform this image to artistic style",
+        parameters: {
+          negative_prompt: "bad quality, blurry, distorted", // Что исключить из генерации
+          guidance_scale: 7.5,  // Сила следования промпту
+          num_inference_steps: 25  // Больше шагов = выше качество, но дольше время
+        }
+      };
+    } 
+    // Для модели instruct-pix2pix специфический формат
+    else if (modelId.includes('instruct-pix2pix')) {
       payload = {
         inputs: {
           image: imageBuffer.toString('base64'),
-          prompt: prompt || ""
+          prompt: prompt || "Transform this image"
         }
       };
-    } else {
-      // Для моделей, которые работают только с изображением
+    } 
+    // Для всех остальных моделей (default)
+    else {
+      // Базовый случай - просто отправляем изображение
       payload = {
         inputs: imageBuffer.toString('base64')
       };
       
-      // Для моделей, которые поддерживают дополнительные параметры
+      // Если также поддерживается текстовый запрос
       if (prompt) {
-        payload.parameters = { prompt };
+        payload.parameters = { 
+          prompt: prompt,
+          guidance_scale: 7.5
+        };
       }
     }
     
