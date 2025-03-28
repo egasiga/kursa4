@@ -102,17 +102,17 @@ export class MemStorage implements IStorage {
         apiParams: { 
           aiModel: "style-transfer",
           transformType: "painting",
-          styleReference: "oil"
+          styleReference: "impressionism"
         }
       },
       {
-        name: "Акварель",
-        description: "Преобразуйте изображение в стиле акварельной живописи",
-        previewUrl: "/api/styles/preview/watercolor",
+        name: "Кубизм",
+        description: "Преобразуйте изображение в стиле кубизма",
+        previewUrl: "/api/styles/preview/cubism",
         apiParams: { 
           aiModel: "style-transfer",
-          transformType: "painting",
-          styleReference: "watercolor"
+          transformType: "artistic",
+          styleReference: "cubism"
         }
       },
       {
@@ -151,8 +151,8 @@ export class MemStorage implements IStorage {
         previewUrl: "/api/styles/preview/comic",
         apiParams: { 
           aiModel: "comic-transformer",
-          transformType: "paneling",
-          inkEffect: true
+          transformType: "print", 
+          inkEffect: "high"
         }
       },
       {
@@ -171,8 +171,8 @@ export class MemStorage implements IStorage {
         previewUrl: "/api/styles/preview/cyberpunk",
         apiParams: { 
           aiModel: "future-vision",
-          transformType: "scifi",
-          neonEffect: true
+          transformType: "sci-fi", 
+          neonEffect: "high"
         }
       }
     ];
