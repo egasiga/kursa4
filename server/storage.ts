@@ -76,39 +76,48 @@ export class MemStorage implements IStorage {
   private initializeAiStyles() {
     const defaultStyles: InsertAiStyle[] = [
       {
-        name: "Нейронное искусство",
-        description: "Преобразуйте ваше изображение в стиле нейронных сетей",
-        previewUrl: "/api/styles/preview/neural",
-        apiParams: { 
-          aiModel: "Нейронное искусство",
-          styleIntensity: 0.8
-        }
-      },
-      {
-        name: "Аниме",
-        description: "Преобразуйте ваше изображение в стиле аниме",
-        previewUrl: "/api/styles/preview/anime",
-        apiParams: { 
-          aiModel: "Аниме",
-          styleIntensity: 0.9
-        }
-      },
-      {
         name: "Масляная живопись",
         description: "Преобразуйте изображение в стиле масляной живописи",
         previewUrl: "/api/styles/preview/oil-painting",
         apiParams: { 
           aiModel: "Масляная живопись",
+          styleIntensity: 1.2
+        }
+      },
+      {
+        name: "Набросок карандашом",
+        description: "Преобразуйте изображение в черно-белый набросок карандашом",
+        previewUrl: "/api/styles/preview/pencil-sketch",
+        apiParams: { 
+          aiModel: "Контурный рисунок",
           styleIntensity: 1.0
         }
       },
       {
-        name: "Импрессионизм",
-        description: "Преобразуйте изображение в стиле импрессионизма",
-        previewUrl: "/api/styles/preview/impressionism",
+        name: "Акварель",
+        description: "Преобразуйте изображение в стиле акварельной живописи",
+        previewUrl: "/api/styles/preview/watercolor",
         apiParams: { 
-          aiModel: "Импрессионизм",
-          styleIntensity: 0.9
+          aiModel: "Акварель",
+          styleIntensity: 1.2
+        }
+      },
+      {
+        name: "Тушь",
+        description: "Преобразуйте изображение в стиле рисунка тушью",
+        previewUrl: "/api/styles/preview/ink",
+        apiParams: { 
+          aiModel: "Контурный рисунок",
+          styleIntensity: 1.5
+        }
+      },
+      {
+        name: "Винтаж",
+        description: "Преобразуйте изображение в стиле старой фотографии",
+        previewUrl: "/api/styles/preview/vintage",
+        apiParams: { 
+          aiModel: "Винтаж",
+          styleIntensity: 1.2
         }
       },
       {
@@ -118,69 +127,6 @@ export class MemStorage implements IStorage {
         apiParams: { 
           aiModel: "Пиксель-арт",
           styleIntensity: 1.0
-        }
-      },
-      {
-        name: "Поп-арт",
-        description: "Преобразуйте изображение в стиле поп-арт",
-        previewUrl: "/api/styles/preview/pop-art",
-        apiParams: { 
-          aiModel: "Поп-арт",
-          styleIntensity: 1.0
-        }
-      },
-      {
-        name: "Карикатура",
-        description: "Преобразуйте ваше изображение в стиле карикатуры",
-        previewUrl: "/api/styles/preview/cartoon",
-        apiParams: { 
-          aiModel: "Карикатура",
-          styleIntensity: 0.7
-        }
-      },
-      {
-        name: "Комикс",
-        description: "Преобразуйте ваше изображение в стиле комикса",
-        previewUrl: "/api/styles/preview/comic",
-        apiParams: { 
-          aiModel: "Комикс",
-          styleIntensity: 0.8
-        }
-      },
-      {
-        name: "Винтаж",
-        description: "Преобразуйте изображение в стиле старой фотографии",
-        previewUrl: "/api/styles/preview/vintage",
-        apiParams: { 
-          aiModel: "Винтаж",
-          styleIntensity: 0.7
-        }
-      },
-      {
-        name: "Неон",
-        description: "Преобразуйте изображение в неоновом стиле",
-        previewUrl: "/api/styles/preview/neon",
-        apiParams: { 
-          aiModel: "Неон",
-          styleIntensity: 0.8
-        }
-      },
-      {
-        name: "Акварель",
-        description: "Преобразуйте изображение в стиле акварельной живописи",
-        previewUrl: "/api/styles/preview/watercolor",
-        apiParams: { 
-          aiModel: "Акварель",
-          styleIntensity: 0.8
-        }
-      },
-      {
-        name: "Контурный рисунок",
-        description: "Преобразуйте изображение в контурный рисунок",
-        previewUrl: "/api/styles/preview/line-drawing",
-        apiParams: { 
-          aiModel: "Контурный рисунок",
-          styleIntensity: 0.8
         }
       }
     ];

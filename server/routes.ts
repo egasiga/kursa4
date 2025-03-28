@@ -19,130 +19,39 @@ import sharp from 'sharp';
 // Преобразуем exec в промис для удобства использования
 const execPromise = promisify(exec);
 
+/**
+ * Применяет художественный стиль к изображению с использованием библиотеки Sharp
+ * @param imageBase64 - изображение в формате base64 с префиксом data:image/...;base64,
+ * @param styleParams - параметры стиля
+ * @returns обработанное изображение в формате base64
+ */
 async function applyAiStyle(imageBase64: string, styleParams: any): Promise<string> {
   try {
-    console.log("Применение AI-стиля:", styleParams);
+    console.log("Применение художественного стиля:", styleParams);
     
     // Убираем префикс data:image/...;base64, из строки base64
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     
-    // Проверяем наличие API ключа OpenAI
-    if (process.env.OPENAI_API_KEY) {
-      console.log("Найден ключ OpenAI API, используем настоящий AI для обработки");
-      
-      try {
-        // Создаем временную директорию для передачи данных
-        const tempDir = mkdtempSync(join(tmpdir(), 'ai-meme-'));
-        const imageFilePath = join(tempDir, 'image.txt');
-        const styleParamsFilePath = join(tempDir, 'style-params.json');
-        const resultFilePath = join(tempDir, 'result.txt');
-        
-        // Записываем base64 изображения и параметры стиля во временные файлы
-        await writeFile(imageFilePath, base64Data);
-        await writeFile(styleParamsFilePath, JSON.stringify(styleParams));
-        
-        // Создаем простой Python-скрипт для запуска
-        const scriptPath = join(tempDir, 'run_ai.py');
-        const scriptContent = `
-import json
-import sys
-import os
-from server.openai_utils import process_image_with_openai
-
-# Пути к файлам из аргументов командной строки
-image_path = sys.argv[1]
-params_path = sys.argv[2]
-result_path = sys.argv[3]
-
-# Загружаем изображение из файла
-with open(image_path, 'r') as f:
-    image_base64 = f.read()
-
-# Загружаем параметры из файла
-with open(params_path, 'r') as f:
-    style_params = json.load(f)
-
-# Обрабатываем изображение
-result = process_image_with_openai(image_base64, style_params)
-
-# Записываем результат в файл
-with open(result_path, 'w') as f:
-    f.write(result)
-`;
-        await writeFile(scriptPath, scriptContent);
-        
-        // Запускаем отдельный Python-скрипт для обработки
-        console.log("Запуск Python-скрипта для обработки изображения через OpenAI API...");
-        const { spawn } = await import('child_process');
-        
-        return new Promise((resolve, reject) => {
-          const pythonProcess = spawn('python', [
-            scriptPath, 
-            imageFilePath, 
-            styleParamsFilePath, 
-            resultFilePath
-          ]);
-          
-          let errorOutput = '';
-          
-          pythonProcess.stderr.on('data', (data) => {
-            errorOutput += data.toString();
-            console.error(`Python error: ${data}`);
-          });
-          
-          pythonProcess.on('close', async (code) => {
-            try {
-              if (code !== 0) {
-                console.error(`Python process exited with code ${code}`);
-                console.error(`Error: ${errorOutput}`);
-                throw new Error(`Python process failed with exit code ${code}: ${errorOutput}`);
-              }
-              
-              // Проверяем, был ли создан файл с результатом
-              try {
-                const result = await readFile(resultFilePath, 'utf8');
-                console.log("Обработка изображения AI успешно завершена");
-                
-                // Очистка временных файлов
-                await Promise.all([
-                  unlink(imageFilePath).catch(() => {}),
-                  unlink(styleParamsFilePath).catch(() => {}),
-                  unlink(scriptPath).catch(() => {}),
-                  unlink(resultFilePath).catch(() => {})
-                ]);
-                
-                resolve('data:image/png;base64,' + result.trim());
-              } catch (readError) {
-                console.error("Ошибка при чтении результата:", readError);
-                throw readError;
-              }
-            } catch (error) {
-              console.error("Ошибка при обработке изображения Python-скриптом:", error);
-              console.log("Используем запасной вариант с Sharp для обработки изображения");
-              // Продолжаем выполнение с Sharp
-              resolve(applySharpFilters(imageBase64, base64Data, styleParams));
-            }
-          });
-        });
-      } catch (pythonError) {
-        console.error("Ошибка при обработке изображения Python-скриптом:", pythonError);
-        console.log("Используем запасной вариант с Sharp для обработки изображения");
-        return applySharpFilters(imageBase64, base64Data, styleParams);
-      }
-    } else {
-      console.log("API ключ OpenAI не найден, используем локальную обработку с Sharp");
-      return applySharpFilters(imageBase64, base64Data, styleParams);
-    }
+    // Применяем художественные фильтры с помощью Sharp
+    const styledImage = await applyArtisticFilters(imageBase64, base64Data, styleParams);
+    
+    return styledImage;
   } catch (error) {
-    console.error('Ошибка при применении AI-стиля:', error);
+    console.error('Ошибка при применении художественного стиля:', error);
     console.error((error as Error).stack);
     // В случае ошибки возвращаем исходное изображение
     return imageBase64;
   }
 }
 
-// Отдельная функция для применения фильтров Sharp как запасной вариант
-async function applySharpFilters(imageBase64: string, base64Data: string, styleParams: any): Promise<string> {
+/**
+ * Применяет художественные фильтры к изображению с помощью Sharp
+ * @param imageBase64 изображение в формате base64 с префиксом
+ * @param base64Data изображение в формате base64 без префикса
+ * @param styleParams параметры стиля
+ * @returns обработанное изображение в формате base64
+ */
+async function applyArtisticFilters(imageBase64: string, base64Data: string, styleParams: any): Promise<string> {
   try {
     // Преобразуем строку base64 в буфер
     const imageBuffer = Buffer.from(base64Data, 'base64');
@@ -223,14 +132,25 @@ async function applySharpFilters(imageBase64: string, base64Data: string, styleP
         case "Масляная живопись":
         case "Oil Painting":
           // Эффект масляной живописи: текстура мазков
-          // Используем несколько проходов размытия и повышения резкости
+          // Комбинируем несколько техник для создания более выраженного эффекта
           sharpImage = sharpImage
-            .blur(1 * intensity)
-            .sharpen(10 * intensity)
-            .median(2)
+            // Шаг 1: Небольшое размытие для создания эффекта "мягких мазков"
+            .blur(1.5 * intensity)
+            // Шаг 2: Повышаем контрастность для создания более выраженных цветов
+            .convolve({
+              width: 3,
+              height: 3,
+              kernel: [0, -0.5, 0, -0.5, 3, -0.5, 0, -0.5, 0],
+              scale: 1
+            })
+            // Шаг 3: Медианный фильтр для создания "областей" цвета как в масляной живописи
+            .median(3)
+            // Шаг 4: Повышаем резкость для деталей
+            .sharpen(12 * intensity)
+            // Шаг 5: Настраиваем цвета
             .modulate({
               brightness: 1.05, 
-              saturation: 1.2 * intensity
+              saturation: 1.3 * intensity
             });
           break;
           
@@ -302,19 +222,68 @@ async function applySharpFilters(imageBase64: string, base64Data: string, styleP
           
         case "Акварель":
         case "Watercolor":
-          // Эффект акварели: мягкие края, светлые тона
+          // Эффект акварели: мягкие края, светлые тона, текстура
           sharpImage = sharpImage
+            // Сначала увеличиваем яркость и снижаем контрастность
             .modulate({
-              brightness: 1.1,
-              saturation: 1.1 * intensity
+              brightness: 1.2,
+              saturation: 1.05 * intensity
             })
-            .blur(1.5 * intensity)
-            .sharpen(5 * intensity);
+            // Слегка размываем для "растекания" красок
+            .blur(2 * intensity)
+            // Затем повышаем контрастность для выделения деталей
+            .convolve({
+              width: 3,
+              height: 3,
+              kernel: [0, 0, 0, 0, 1.5, 0, 0, 0, 0],
+              scale: 1
+            })
+            // Добавляем немного резкости для текстуры бумаги
+            .sharpen(3 * intensity)
+            // Настраиваем гамму для более мягких переходов
+            .gamma(0.85);
           break;
           
+        case "Набросок карандашом":
+        case "Pencil Sketch":
+          // Создание эффекта карандашного рисунка
+          // Комбинирует выделение краев с текстурой и мягкими переходами
+          sharpImage = sharpImage
+            .grayscale()  // Преобразуем в оттенки серого
+            // Создаем копию для контуров
+            .clone()
+            .blur(0.5 * intensity)  // Небольшое размытие
+            .convolve({  // Выделение краев/линий
+              width: 3,
+              height: 3,
+              kernel: [-1, -1, -1, -1, 9, -1, -1, -1, -1]
+            })
+            .normalize()  // Нормализуем результат
+            .modulate({ brightness: 1.2 })  // Настраиваем яркость
+            .gamma(2.2 * intensity)  // Усиливаем контраст
+            .negate();  // Инвертируем для получения темных линий на светлом фоне
+          break;
+
+        case "Тушь":
+        case "Ink Drawing":
+          // Эффект рисунка тушью - сильное выделение краев/контуров
+          sharpImage = sharpImage
+            .grayscale()  // Сначала преобразуем в оттенки серого
+            .normalize()  // Нормализуем контраст
+            .modulate({ brightness: 1.4 })  // Повышаем яркость
+            .convolve({  // Выделение краев для линий тушью
+              width: 3,
+              height: 3,
+              kernel: [-2, -2, -2, -2, 15, -2, -2, -2, -2],
+              scale: 1
+            })
+            .threshold(150 * intensity)  // Делаем контрастнее
+            .negate();  // Инвертируем для получения черных линий на белом фоне
+          break;
+
         case "Контурный рисунок":
         case "Line Drawing":
-          // Выделение краев и контуров
+          // Простое выделение краев и контуров
           sharpImage = sharpImage
             .grayscale()  // Сначала преобразуем в оттенки серого
             .modulate({ brightness: 1.5 })  // Повышаем яркость
