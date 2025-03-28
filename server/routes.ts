@@ -50,7 +50,19 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
       }
     }
     
-    // 2. Если нам разрешено использовать API и есть ключ OpenAI, пробуем его вторым
+    // 2. Пробуем Google Magenta (TensorFlow Hub), который не требует API ключа
+    if (styleParams.transformType === "magenta" || (!useLocalFiltersOnly && !huggingFaceEnabled && !openaiEnabled)) {
+      try {
+        console.log("Используем Google Magenta (TensorFlow Hub)");
+        const { magentaStyleImage } = await import('./magenta_styler');
+        return await magentaStyleImage(imageBase64, styleParams);
+      } catch (magentaError) {
+        console.error('Ошибка при работе с Google Magenta:', magentaError);
+        // Продолжаем со следующим методом
+      }
+    }
+    
+    // 3. Если нам разрешено использовать API и есть ключ OpenAI, пробуем его следующим
     if (!useLocalFiltersOnly && openaiEnabled) {
       try {
         console.log("Используем OpenAI API");
@@ -62,7 +74,7 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
       }
     }
     
-    // 3. Пробуем Sharp фильтры
+    // 4. Пробуем Sharp фильтры
     try {
       console.log("Используем Sharp фильтры");
       const { applyImageStyles } = await import('./image_filters');
@@ -72,7 +84,7 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
       // Продолжаем со следующим методом
     }
     
-    // 4. Пробуем Jimp фильтры
+    // 5. Пробуем Jimp фильтры
     try {
       console.log("Используем Jimp фильтры");
       const { jimpStyleImage } = await import('./jimp_styler');
@@ -82,7 +94,7 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
       // Продолжаем со следующим методом
     }
     
-    // 5. В крайнем случае, используем базовые фильтры Sharp напрямую
+    // 6. В крайнем случае, используем базовые фильтры Sharp напрямую
     try {
       console.log("Используем базовые фильтры Sharp напрямую");
       const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
@@ -877,25 +889,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Styles
   app.get("/api/styles", async (req: Request, res: Response) => {
     try {
-      // Используем нашу новую реализацию бесплатных фильтров
+      // Объединяем стили из нескольких источников
+      let allStyles: any[] = [];
+      
+      // 1. Получаем стили из Magenta (TensorFlow)
+      try {
+        const { getAvailableAiStyles } = await import('./magenta_styler');
+        const magentaStyles = getAvailableAiStyles();
+        
+        // Добавляем стили Magenta в начало списка
+        magentaStyles.forEach(style => {
+          // Устанавливаем источник стиля
+          style.source = "magenta";
+          // Устанавливаем transformType для правильной обработки
+          if (!style.apiParams.transformType) {
+            style.apiParams.transformType = "magenta";
+          }
+        });
+        
+        allStyles = [...magentaStyles];
+      } catch (magentaError) {
+        console.error('Ошибка при загрузке стилей из Magenta:', magentaError);
+      }
+      
+      // 2. Пробуем получить стили из локального модуля Sharp
       try {
         const { getAvailableAiStyles } = await import('./image_filters');
-        const styles = getAvailableAiStyles();
-        res.json(styles);
-      } catch (localError) {
-        console.error('Ошибка при загрузке стилей из локального модуля:', localError);
-        // Пробуем резервный вариант - Hugging Face
+        const sharpStyles = getAvailableAiStyles();
+        
+        // Добавляем стили Sharp к списку
+        sharpStyles.forEach(style => {
+          // Устанавливаем источник стиля
+          style.source = "sharp";
+          // Основные типы обработки уже должны быть установлены
+          if (!style.apiParams.transformType) {
+            style.apiParams.transformType = "sharp";
+          }
+        });
+        
+        allStyles = [...allStyles, ...sharpStyles];
+      } catch (sharpError) {
+        console.error('Ошибка при загрузке стилей из Sharp:', sharpError);
+      }
+      
+      // 3. Пробуем получить стили из Jimp
+      try {
+        const { getAvailableAiStyles } = await import('./jimp_styler');
+        const jimpStyles = getAvailableAiStyles();
+        
+        // Добавляем стили Jimp к списку
+        jimpStyles.forEach(style => {
+          // Устанавливаем источник стиля
+          style.source = "jimp";
+          // Устанавливаем transformType для правильной обработки
+          if (!style.apiParams.transformType) {
+            style.apiParams.transformType = "jimp";
+          }
+        });
+        
+        allStyles = [...allStyles, ...jimpStyles];
+      } catch (jimpError) {
+        console.error('Ошибка при загрузке стилей из Jimp:', jimpError);
+      }
+      
+      // 4. Пробуем получить стили из Hugging Face
+      if (process.env.HUGGINGFACE_API_KEY) {
         try {
           const { getAvailableAiStyles } = await import('./hugging_face_styler');
-          const styles = getAvailableAiStyles();
-          res.json(styles);
-        } catch (aiError) {
-          console.error('Ошибка при загрузке стилей из AI модуля:', aiError);
-          // Если все не работает - загружаем из хранилища
-          const styles = await storage.getAiStyles();
-          res.json(styles);
+          const hfStyles = getAvailableAiStyles();
+          
+          // Добавляем стили Hugging Face к списку
+          hfStyles.forEach(style => {
+            // Устанавливаем источник стиля
+            style.source = "huggingface";
+            // Устанавливаем transformType для правильной обработки
+            if (!style.apiParams.transformType) {
+              style.apiParams.transformType = "huggingface";
+            }
+          });
+          
+          allStyles = [...allStyles, ...hfStyles];
+        } catch (hfError) {
+          console.error('Ошибка при загрузке стилей из Hugging Face:', hfError);
         }
       }
+      
+      // Если список все еще пуст, загружаем из хранилища
+      if (allStyles.length === 0) {
+        console.warn('Ни один из модулей стилизации не вернул стили. Загружаем из хранилища...');
+        allStyles = await storage.getAiStyles();
+      }
+      
+      // Удаляем дубликаты по имени
+      const uniqueStyles = allStyles.filter((style, index, self) => 
+        index === self.findIndex(s => s.name === style.name)
+      );
+      
+      // Переназначаем ID для сохранения порядковых номеров
+      uniqueStyles.forEach((style, index) => {
+        style.id = index + 1;
+      });
+      
+      res.json(uniqueStyles);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch styles", error: String(error) });
     }
@@ -908,60 +1003,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid style ID" });
       }
 
+      // Собираем стили из всех доступных источников и ищем нужный
+      let style = null;
+      
+      // 1. Пробуем поискать в Magenta
       try {
-        // Сначала пробуем получить из модуля image_filters
-        const { getAvailableAiStyles } = await import('./image_filters');
+        const { getAvailableAiStyles } = await import('./magenta_styler');
         const styles = getAvailableAiStyles();
-        const style = styles.find(s => s.id === id);
+        const foundStyle = styles.find(s => s.id === id);
         
-        if (style) {
-          return res.json(style);
-        } else {
-          // Если стиль не найден, пробуем другие источники
-          try {
-            // Пробуем получить из Hugging Face
-            const { getAvailableAiStyles: getHfStyles } = await import('./hugging_face_styler');
-            const hfStyles = getHfStyles();
-            const hfStyle = hfStyles.find(s => s.id === id);
-            
-            if (hfStyle) {
-              return res.json(hfStyle);
-            }
-          } catch (hfError) {
-            console.error('Ошибка при загрузке стиля из Hugging Face:', hfError);
+        if (foundStyle) {
+          style = foundStyle;
+          style.source = "magenta";
+          if (!style.apiParams.transformType) {
+            style.apiParams.transformType = "magenta";
           }
-          
-          // В крайнем случае, пробуем получить из хранилища
-          const storageStyle = await storage.getAiStyle(id);
-          if (!storageStyle) {
-            return res.status(404).json({ message: "Style not found" });
-          }
-          
-          return res.json(storageStyle);
         }
-      } catch (localError) {
-        console.error('Ошибка при загрузке стиля из локального модуля:', localError);
-        
-        // Если с image_filters возникли проблемы, пробуем Hugging Face
+      } catch (magentaError) {
+        console.error('Ошибка при загрузке стиля из Magenta:', magentaError);
+      }
+      
+      // 2. Если не нашли, пробуем поискать в Sharp
+      if (!style) {
+        try {
+          const { getAvailableAiStyles } = await import('./image_filters');
+          const styles = getAvailableAiStyles();
+          const foundStyle = styles.find(s => s.id === id);
+          
+          if (foundStyle) {
+            style = foundStyle;
+            style.source = "sharp";
+            if (!style.apiParams.transformType) {
+              style.apiParams.transformType = "sharp";
+            }
+          }
+        } catch (sharpError) {
+          console.error('Ошибка при загрузке стиля из Sharp:', sharpError);
+        }
+      }
+      
+      // 3. Если все еще не нашли, пробуем поискать в Jimp
+      if (!style) {
+        try {
+          const { getAvailableAiStyles } = await import('./jimp_styler');
+          const styles = getAvailableAiStyles();
+          const foundStyle = styles.find(s => s.id === id);
+          
+          if (foundStyle) {
+            style = foundStyle;
+            style.source = "jimp";
+            if (!style.apiParams.transformType) {
+              style.apiParams.transformType = "jimp";
+            }
+          }
+        } catch (jimpError) {
+          console.error('Ошибка при загрузке стиля из Jimp:', jimpError);
+        }
+      }
+      
+      // 4. Если до сих пор не нашли, пробуем поискать в Hugging Face
+      if (!style && process.env.HUGGINGFACE_API_KEY) {
         try {
           const { getAvailableAiStyles } = await import('./hugging_face_styler');
           const styles = getAvailableAiStyles();
-          const style = styles.find(s => s.id === id);
+          const foundStyle = styles.find(s => s.id === id);
           
-          if (style) {
-            return res.json(style);
+          if (foundStyle) {
+            style = foundStyle;
+            style.source = "huggingface";
+            if (!style.apiParams.transformType) {
+              style.apiParams.transformType = "huggingface";
+            }
           }
-        } catch (aiError) {
-          console.error('Ошибка при загрузке стиля из HF модуля:', aiError);
+        } catch (hfError) {
+          console.error('Ошибка при загрузке стиля из Hugging Face:', hfError);
         }
-        
-        // Резервный вариант - загружаем из хранилища
-        const style = await storage.getAiStyle(id);
-        if (!style) {
-          return res.status(404).json({ message: "Style not found" });
+      }
+      
+      // 5. Если стиль не найден ни в одном из источников, пробуем получить из хранилища
+      if (!style) {
+        const storageStyle = await storage.getAiStyle(id);
+        if (storageStyle) {
+          style = storageStyle;
         }
-        
+      }
+      
+      // Если стиль найден, возвращаем его
+      if (style) {
         return res.json(style);
+      } else {
+        return res.status(404).json({ message: "Style not found" });
       }
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch style", error: String(error) });
