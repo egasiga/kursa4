@@ -70,14 +70,14 @@ export async function magentaStyleImage(imageBase64: string, styleParams: any): 
     const outputBuffer = fs.readFileSync(outputImagePath);
     const outputBase64 = outputBuffer.toString('base64');
     
-    // Очищаем временные файлы
-    try {
-      fs.unlinkSync(contentImagePath);
-      fs.unlinkSync(styleImagePath);
-      fs.unlinkSync(outputImagePath);
-    } catch (e) {
-      console.warn("Ошибка при удалении временных файлов:", e);
-    }
+    // Оставляем временные файлы, чтобы стилизация не пропадала
+    // try {
+    //   fs.unlinkSync(contentImagePath);
+    //   fs.unlinkSync(styleImagePath);
+    //   fs.unlinkSync(outputImagePath);
+    // } catch (e) {
+    //   console.warn("Ошибка при удалении временных файлов:", e);
+    // }
     
     // Получаем MIME-тип из исходного изображения
     const mimeMatch = imageBase64.match(/^data:([^;]+);base64,/);
@@ -463,9 +463,9 @@ img.save('${blankImagePath}')
         // Копируем созданное изображение в целевую директорию
         try {
           fs.copyFileSync(blankImagePath, stylePath);
-          // Удаляем временные файлы
-          fs.unlinkSync(tempScriptPath);
-          fs.unlinkSync(blankImagePath);
+          // Сохраняем временные файлы для постоянства эффекта
+          // fs.unlinkSync(tempScriptPath);
+          // fs.unlinkSync(blankImagePath);
           resolve();
         } catch (err) {
           reject(err);
@@ -529,7 +529,7 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Пиксель-арт",
-        styleIntensity: 2.0,
+        styleIntensity: 1.5,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в стиль пиксельной графики с ограниченной цветовой палитрой"
       },
