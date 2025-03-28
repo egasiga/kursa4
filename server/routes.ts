@@ -6,9 +6,14 @@ import { insertMemeTemplateSchema, insertSavedMemeSchema, insertCollageSchema } 
 import fetch from "node-fetch";
 
 // Функция для применения AI-стилей к изображениям
-// В этой реализации мы используем sharp для базовых трансформаций,
-// но в реальном проекте здесь был бы вызов к сервисам нейронных сетей
+// В этой реализации мы используем OpenAI API через Python-скрипт
+// для настоящей AI-стилизации изображений
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import sharp from 'sharp';
+
+// Преобразуем exec в промис для удобства использования
+const execPromise = promisify(exec);
 
 async function applyAiStyle(imageBase64: string, styleParams: any): Promise<string> {
   try {
@@ -17,6 +22,40 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
     // Убираем префикс data:image/...;base64, из строки base64
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     
+    // Проверяем наличие API ключа OpenAI
+    if (process.env.OPENAI_API_KEY) {
+      console.log("Найден ключ OpenAI API, используем настоящий AI для обработки");
+      
+      try {
+        // Запускаем Python-скрипт для обработки изображения через OpenAI API
+        const styleParamsJson = JSON.stringify(styleParams);
+        
+        // Подготавливаем команду для запуска Python-скрипта
+        // Передаем изображение и параметры стиля в качестве аргументов
+        const pythonCommand = `python server/ai_processor.py "${base64Data}" '${styleParamsJson}'`;
+        
+        console.log("Запуск Python-скрипта для обработки изображения...");
+        
+        // Устанавливаем таймаут в 30 секунд, так как запросы к OpenAI API могут занимать время
+        const { stdout, stderr } = await execPromise(pythonCommand, { timeout: 30000 });
+        
+        if (stderr) {
+          console.error("Ошибка при выполнении Python-скрипта:", stderr);
+        }
+        
+        if (stdout) {
+          console.log("Обработка изображения AI успешно завершена");
+          return 'data:image/png;base64,' + stdout.trim();
+        }
+      } catch (pythonError) {
+        console.error("Ошибка при обработке изображения Python-скриптом:", pythonError);
+        console.log("Используем запасной вариант с Sharp для обработки изображения");
+      }
+    } else {
+      console.log("API ключ OpenAI не найден, используем локальную обработку с Sharp");
+    }
+    
+    // Запасной вариант: если OpenAI API недоступен, используем Sharp
     // Преобразуем строку base64 в буфер
     const imageBuffer = Buffer.from(base64Data, 'base64');
     
@@ -28,7 +67,7 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
     
     // Применяем эффекты в зависимости от выбранной AI модели
     if (styleParams.aiModel) {
-      console.log(`Запуск AI-модели: ${styleParams.aiModel}`);
+      console.log(`Запуск модели Sharp: ${styleParams.aiModel}`);
       
       switch (styleParams.aiModel) {
         case "neural-style":
@@ -133,7 +172,7 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
           
         case "future-vision":
           // Футуристический стиль с неоновыми эффектами
-          console.log(`Применение футуристического стиля с неоновым эффектом: ${styleParams.neonEffect || 'medium'}`);
+          console.log(`Применение футуристического стиля с неоновым эффектом: ${styleParams.neonEffect || 'high'}`);
           sharpImage = sharpImage
             .modulate({
               brightness: 1.2, 
@@ -154,11 +193,7 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
             });
       }
       
-      // Добавляем задержку для имитации обработки нейронной сетью
-      const processingTime = Math.floor(Math.random() * 1000) + 1000; // 1-2 секунды
-      await new Promise(resolve => setTimeout(resolve, processingTime));
-      
-      console.log("Обработка изображения AI завершена");
+      console.log("Обработка изображения с помощью Sharp завершена");
     }
     
     // Преобразуем обработанное изображение в PNG и затем в base64
