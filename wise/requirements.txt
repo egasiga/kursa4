@@ -1,0 +1,14 @@
+imageio
+matplotlib
+Pillow
+numpy
+torch
+torchvision
+pytorch-lightning
+streamlit
+dominate
+segmentation_models_pytorch
+imageio-ffmpeg
+streamlit_drawable_canvas
+scikit-image
+visdom

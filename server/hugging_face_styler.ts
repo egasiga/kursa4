@@ -8,19 +8,20 @@ import { AiStyle } from '../shared/schema';
 // API URL для Hugging Face Inference API
 const HF_API_URL = 'https://api-inference.huggingface.co/models';
 
-// Таблица соответствия стилей и моделей на Hugging Face
+// Используем единую модель для всех стилей - Stable Diffusion img2img
+// Эта модель поддерживает стилизацию через промпты
 const styleToModelMap: Record<string, string> = {
-  "Масляная живопись": "CompVis/stable-diffusion-v1-4",
-  "Акварель": "CompVis/stable-diffusion-v1-4",
-  "Набросок карандашом": "Salesforce/blip-image-captioning-large",
-  "Тушь": "CompVis/stable-diffusion-v1-4",
-  "Контурный рисунок": "CompVis/stable-diffusion-v1-4",
-  "Пиксель-арт": "CompVis/stable-diffusion-v1-4",
-  "Аниме": "Linaqruf/anything-v3.0",
-  "Комикс": "CompVis/stable-diffusion-v1-4",
-  "Неон": "CompVis/stable-diffusion-v1-4",
-  "Винтаж": "CompVis/stable-diffusion-v1-4",
-  "Карикатура": "CompVis/stable-diffusion-v1-4",
+  "Масляная живопись": "runwayml/stable-diffusion-v1-5",
+  "Акварель": "runwayml/stable-diffusion-v1-5",
+  "Набросок карандашом": "runwayml/stable-diffusion-v1-5",
+  "Тушь": "runwayml/stable-diffusion-v1-5",
+  "Контурный рисунок": "runwayml/stable-diffusion-v1-5",
+  "Пиксель-арт": "runwayml/stable-diffusion-v1-5",
+  "Аниме": "runwayml/stable-diffusion-v1-5",
+  "Комикс": "runwayml/stable-diffusion-v1-5",
+  "Неон": "runwayml/stable-diffusion-v1-5",
+  "Винтаж": "runwayml/stable-diffusion-v1-5",
+  "Карикатура": "runwayml/stable-diffusion-v1-5",
   "Нейронное искусство": "runwayml/stable-diffusion-v1-5"
 };
 
@@ -55,6 +56,7 @@ export async function huggingFaceStyleImage(imageBase64: string, styleParams: an
         const imageBuffer = Buffer.from(base64Data, 'base64');
         
         // Отправляем запрос к Hugging Face API
+        // Для Stable Diffusion img2img нужны особые параметры запроса
         const response = await fetch(`${HF_API_URL}/${encodeURIComponent(modelName)}`, {
           method: 'POST',
           headers: {
@@ -62,9 +64,13 @@ export async function huggingFaceStyleImage(imageBase64: string, styleParams: an
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            inputs: {
-              image: imageBase64,
-              prompt: prompt
+            inputs: imageBase64,
+            parameters: {
+              prompt: prompt,
+              negative_prompt: "blur, ugly, deformed, disfigured, poor details, bad anatomy",
+              num_inference_steps: 30,
+              guidance_scale: 7.5,
+              strength: 0.5 * intensity  // Сила преобразования зависит от интенсивности
             }
           })
         });

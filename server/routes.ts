@@ -29,23 +29,80 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
   try {
     console.log("Применение художественного стиля:", styleParams);
     
-    try {
-      // Импортируем функцию для обработки изображения с Hugging Face
-      const { huggingFaceStyleImage } = await import('./hugging_face_styler');
+    // Флаг для принудительного использования локальных фильтров
+    const useLocalFiltersOnly = styleParams.useLocalFiltersOnly === true;
+    
+    // Проверяем доступность API ключей
+    const huggingFaceEnabled = !useLocalFiltersOnly && process.env.HUGGINGFACE_API_KEY && process.env.HUGGINGFACE_API_KEY.length > 0;
+    const openaiEnabled = !useLocalFiltersOnly && process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.length > 0;
+    
+    // Приоритезируем безопасную последовательность вызовов
+    if (useLocalFiltersOnly || (!huggingFaceEnabled && !openaiEnabled)) {
+      // Используем локальные фильтры без API
+      try {
+        // Сначала пробуем Sharp фильтры (новая реализация)
+        const { applyImageStyles } = await import('./image_filters');
+        console.log("Используем бесплатные фильтры Sharp для стилизации");
+        return await applyImageStyles(imageBase64, styleParams);
+      } catch (sharpError) {
+        console.error("Ошибка при применении Sharp фильтров:", sharpError);
+        
+        try {
+          // Запасной вариант - используем Jimp
+          console.log("Используем бесплатные фильтры Jimp для стилизации");
+          const { jimpStyleImage } = await import('./jimp_styler');
+          return await jimpStyleImage(imageBase64, styleParams);
+        } catch (jimpError) {
+          console.error("Ошибка при применении Jimp фильтров:", jimpError);
+          
+          // Последняя попытка - применяем базовые фильтры Sharp
+          console.log("Используем базовые фильтры Sharp");
+          const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+          return await applyArtisticFilters(imageBase64, base64Data, styleParams);
+        }
+      }
+    } else {
+      // Пробуем API сервисы
+      if (huggingFaceEnabled) {
+        try {
+          console.log("Пробуем использовать Hugging Face API");
+          const { huggingFaceStyleImage } = await import('./hugging_face_styler');
+          return await huggingFaceStyleImage(imageBase64, styleParams);
+        } catch (hfError) {
+          console.error('Ошибка Hugging Face API:', hfError);
+        }
+      }
       
-      // Используем Hugging Face для стилизации или локальные фильтры
-      const styledImage = await huggingFaceStyleImage(imageBase64, styleParams);
-      return styledImage;
-    } catch (aiError) {
-      console.error('Ошибка при применении стиля через Hugging Face, переключаемся на локальные фильтры:', aiError);
+      if (openaiEnabled) {
+        try {
+          console.log("Пробуем использовать OpenAI API");
+          const { aiStyleImage } = await import('./ai_styler');
+          return await aiStyleImage(imageBase64, styleParams);
+        } catch (openaiError) {
+          console.error('Ошибка OpenAI API:', openaiError);
+        }
+      }
       
-      // Применяем локальную обработку через Sharp
-      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-      const styledImage = await applyArtisticFilters(imageBase64, base64Data, styleParams);
-      return styledImage;
+      // Если ни один API не сработал, возвращаемся к локальным фильтрам
+      try {
+        const { applyImageStyles } = await import('./image_filters');
+        console.log("API не сработали, используем Sharp фильтры");
+        return await applyImageStyles(imageBase64, styleParams);
+      } catch (finalError) {
+        console.error('Ошибка при попытке использовать локальные фильтры:', finalError);
+        
+        // В самом крайнем случае пробуем Jimp
+        try {
+          const { jimpStyleImage } = await import('./jimp_styler');
+          return await jimpStyleImage(imageBase64, styleParams);
+        } catch (ultimateError) {
+          console.error('Все методы стилизации не сработали, возвращаем исходное изображение:', ultimateError);
+          return imageBase64;
+        }
+      }
     }
   } catch (error) {
-    console.error('Ошибка при применении художественного стиля:', error);
+    console.error('Критическая ошибка при применении художественного стиля:', error);
     console.error((error as Error).stack);
     // В случае ошибки возвращаем исходное изображение
     return imageBase64;
@@ -216,13 +273,11 @@ async function applyArtisticFilters(imageBase64: string, base64Data: string, sty
             sharpImage = sharpImage
               // Уменьшаем размер, используя целочисленное деление для равномерных пикселей
               .resize(Math.floor(width / pixelSize), Math.floor(height / pixelSize), {
-                kernel: 'nearest',  // Обеспечивает четкую пикселизацию
-                fit: 'fill'         // Принудительно устанавливает точный размер
+                kernel: 'nearest'  // Обеспечивает четкую пикселизацию
               })
               // Масштабируем обратно до исходного размера без сглаживания
               .resize(width, height, {
-                kernel: 'nearest',  // Сохраняет четкие границы пикселей
-                fit: 'fill'         // Заполняет весь размер без искажения пропорций
+                kernel: 'nearest'  // Сохраняет четкие границы пикселей
               });
               
             // Шаг 3: Добавляем легкую "сетку" между пикселями для более выраженного эффекта
@@ -831,16 +886,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Styles
   app.get("/api/styles", async (req: Request, res: Response) => {
     try {
-      // Импортируем функцию, возвращающую доступные AI стили из нового модуля
+      // Используем нашу новую реализацию бесплатных фильтров
       try {
-        const { getAvailableAiStyles } = await import('./hugging_face_styler');
+        const { getAvailableAiStyles } = await import('./image_filters');
         const styles = getAvailableAiStyles();
         res.json(styles);
-      } catch (aiError) {
-        console.error('Ошибка при загрузке AI стилей из нового модуля:', aiError);
-        // Резервный вариант - загружаем из хранилища
-        const styles = await storage.getAiStyles();
-        res.json(styles);
+      } catch (localError) {
+        console.error('Ошибка при загрузке стилей из локального модуля:', localError);
+        // Пробуем резервный вариант - Hugging Face
+        try {
+          const { getAvailableAiStyles } = await import('./hugging_face_styler');
+          const styles = getAvailableAiStyles();
+          res.json(styles);
+        } catch (aiError) {
+          console.error('Ошибка при загрузке стилей из AI модуля:', aiError);
+          // Если все не работает - загружаем из хранилища
+          const styles = await storage.getAiStyles();
+          res.json(styles);
+        }
       }
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch styles", error: String(error) });
@@ -855,15 +918,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       try {
-        // Попробуем получить из нового модуля
-        const { getAvailableAiStyles } = await import('./hugging_face_styler');
+        // Сначала пробуем получить из модуля image_filters
+        const { getAvailableAiStyles } = await import('./image_filters');
         const styles = getAvailableAiStyles();
         const style = styles.find(s => s.id === id);
         
         if (style) {
           return res.json(style);
         } else {
-          // Если стиль не найден в новом модуле, попробуем получить из хранилища
+          // Если стиль не найден, пробуем другие источники
+          try {
+            // Пробуем получить из Hugging Face
+            const { getAvailableAiStyles: getHfStyles } = await import('./hugging_face_styler');
+            const hfStyles = getHfStyles();
+            const hfStyle = hfStyles.find(s => s.id === id);
+            
+            if (hfStyle) {
+              return res.json(hfStyle);
+            }
+          } catch (hfError) {
+            console.error('Ошибка при загрузке стиля из Hugging Face:', hfError);
+          }
+          
+          // В крайнем случае, пробуем получить из хранилища
           const storageStyle = await storage.getAiStyle(id);
           if (!storageStyle) {
             return res.status(404).json({ message: "Style not found" });
@@ -871,8 +948,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           return res.json(storageStyle);
         }
-      } catch (aiError) {
-        console.error('Ошибка при загрузке стиля из нового модуля:', aiError);
+      } catch (localError) {
+        console.error('Ошибка при загрузке стиля из локального модуля:', localError);
+        
+        // Если с image_filters возникли проблемы, пробуем Hugging Face
+        try {
+          const { getAvailableAiStyles } = await import('./hugging_face_styler');
+          const styles = getAvailableAiStyles();
+          const style = styles.find(s => s.id === id);
+          
+          if (style) {
+            return res.json(style);
+          }
+        } catch (aiError) {
+          console.error('Ошибка при загрузке стиля из HF модуля:', aiError);
+        }
         
         // Резервный вариант - загружаем из хранилища
         const style = await storage.getAiStyle(id);
