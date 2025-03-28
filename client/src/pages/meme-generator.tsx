@@ -365,6 +365,7 @@ export default function MemeGenerator() {
                   filters={filters}
                   onCanvasReady={setCanvasRef}
                   onTextRender={renderTextOnCanvas}
+                  onUpdateTextPosition={handleTextPositionChange}
                 />
               ) : (
                 <div className="text-center p-8 bg-accent/30 rounded-lg w-full">
