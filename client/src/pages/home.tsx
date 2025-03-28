@@ -1,131 +1,193 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { PenTool, Grid2X2, LayoutTemplate, ArrowRight, Wand2 } from "lucide-react";
+import { PenTool, Grid2X2, LayoutTemplate, ArrowRight, Wand2, Image, Folder, Download, CircleHelp } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="container py-8 space-y-12">
-      <section className="text-center py-12 space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-          Create Amazing Memes and Collages
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Design stunning memes and collages with AI-powered styling in minutes. No design experience needed.
-        </p>
-        <div className="flex flex-wrap gap-4 justify-center pt-4">
-          <Link href="/meme-generator">
-            <Button size="lg" className="gap-2">
-              <PenTool className="w-5 h-5" />
-              Create a Meme
-            </Button>
-          </Link>
-          <Link href="/collage-creator">
-            <Button size="lg" variant="outline" className="gap-2">
-              <Grid2X2 className="w-5 h-5" />
-              Make a Collage
-            </Button>
-          </Link>
+    <div className="flex h-[calc(100vh-3rem)]">
+      {/* Боковая панель, как в настольном приложении */}
+      <div className="w-64 bg-slate-800 border-r border-slate-700 p-4 text-white">
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Быстрый доступ</h3>
+            <div className="space-y-1">
+              <Link href="/meme-generator">
+                <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-700 cursor-pointer">
+                  <PenTool className="w-5 h-5" />
+                  <span>Генератор мемов</span>
+                </div>
+              </Link>
+              <Link href="/collage-creator">
+                <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-700 cursor-pointer">
+                  <Grid2X2 className="w-5 h-5" />
+                  <span>Создание коллажей</span>
+                </div>
+              </Link>
+              <Link href="/templates">
+                <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-700 cursor-pointer">
+                  <LayoutTemplate className="w-5 h-5" />
+                  <span>Шаблоны</span>
+                </div>
+              </Link>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Инструменты</h3>
+            <div className="space-y-1">
+              <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-700 cursor-pointer">
+                <Image className="w-5 h-5" />
+                <span>Галерея изображений</span>
+              </div>
+              <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-700 cursor-pointer">
+                <Wand2 className="w-5 h-5" />
+                <span>AI Стили</span>
+              </div>
+              <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-700 cursor-pointer">
+                <Folder className="w-5 h-5" />
+                <span>Мои проекты</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="pt-4 border-t border-slate-700">
+            <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-700 cursor-pointer">
+              <Download className="w-5 h-5" />
+              <span>Обновления</span>
+            </div>
+            <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-700 cursor-pointer">
+              <CircleHelp className="w-5 h-5" />
+              <span>Справка</span>
+            </div>
+          </div>
         </div>
-      </section>
-
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-2">
-              <PenTool className="w-6 h-6 text-primary" />
-            </div>
-            <CardTitle>Meme Generator</CardTitle>
-            <CardDescription>
-              Create hilarious memes from our collection of templates or upload your own
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc pl-5 space-y-1 text-sm">
-              <li>Choose from popular meme templates</li>
-              <li>Add custom text with stylized fonts</li>
-              <li>Position text precisely where you want it</li>
-              <li>Save and share your creations</li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Link href="/meme-generator">
-              <Button variant="ghost" className="gap-2">
-                Create a Meme <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-2">
-              <Grid2X2 className="w-6 h-6 text-primary" />
-            </div>
-            <CardTitle>Collage Creator</CardTitle>
-            <CardDescription>
-              Combine multiple images into beautiful collages with various layouts
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc pl-5 space-y-1 text-sm">
-              <li>Choose from multiple layout templates</li>
-              <li>Upload your own images</li>
-              <li>Resize and reposition images</li>
-              <li>Add text overlays and captions</li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Link href="/collage-creator">
-              <Button variant="ghost" className="gap-2">
-                Create a Collage <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-2">
-              <Wand2 className="w-6 h-6 text-primary" />
-            </div>
-            <CardTitle>AI Styling</CardTitle>
-            <CardDescription>
-              Apply AI-powered styles to transform your memes and collages
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc pl-5 space-y-1 text-sm">
-              <li>Choose from various artistic styles</li>
-              <li>Transform memes into oil paintings</li>
-              <li>Apply comic book or pixel art effects</li>
-              <li>Create unique watercolor or vaporwave aesthetics</li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Link href="/meme-generator">
-              <Button variant="ghost" className="gap-2">
-                Try AI Styling <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      </section>
-
-      <section className="bg-accent/50 py-10 px-6 rounded-lg">
-        <div className="max-w-3xl mx-auto text-center space-y-6">
-          <h2 className="text-2xl font-bold">Ready to create? Browse our templates</h2>
-          <p className="text-muted-foreground">
-            Get started by browsing our collection of meme templates or upload your own images
+      </div>
+      
+      {/* Основное содержимое */}
+      <div className="flex-1 overflow-auto bg-slate-100 p-6">
+        <section className="text-center mb-12 space-y-4 bg-white p-8 shadow-sm rounded-lg">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Создавайте потрясающие мемы и коллажи
+          </h1>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Создавайте великолепные мемы и коллажи с помощью стилей на основе ИИ за считанные минуты. Опыт дизайна не требуется.
           </p>
-          <Link href="/templates">
-            <Button variant="default" className="gap-2">
-              <LayoutTemplate className="w-5 h-5" />
-              Browse Templates
-            </Button>
-          </Link>
-        </div>
-      </section>
+          <div className="flex flex-wrap gap-4 justify-center pt-4">
+            <Link href="/meme-generator">
+              <Button size="lg" className="gap-2">
+                <PenTool className="w-5 h-5" />
+                Создать мем
+              </Button>
+            </Link>
+            <Link href="/collage-creator">
+              <Button size="lg" variant="outline" className="gap-2">
+                <Grid2X2 className="w-5 h-5" />
+                Создать коллаж
+              </Button>
+            </Link>
+          </div>
+        </section>
+
+        <h2 className="text-xl font-bold mb-4">Доступные функции</h2>
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mb-2">
+                <PenTool className="w-6 h-6 text-blue-600" />
+              </div>
+              <CardTitle>Генератор мемов</CardTitle>
+              <CardDescription>
+                Создавайте смешные мемы из нашей коллекции шаблонов или загрузите свои
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pb-2">
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Выбор из популярных шаблонов мемов</li>
+                <li>Добавление текста со стилизованными шрифтами</li>
+                <li>Точное позиционирование текста</li>
+                <li>Сохранение и публикация ваших творений</li>
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Link href="/meme-generator">
+                <Button variant="ghost" className="gap-2 text-blue-600">
+                  Создать мем <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center mb-2">
+                <Grid2X2 className="w-6 h-6 text-purple-600" />
+              </div>
+              <CardTitle>Создание коллажей</CardTitle>
+              <CardDescription>
+                Объединяйте несколько изображений в красивые коллажи с различными макетами
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pb-2">
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Выбор из множества шаблонов макетов</li>
+                <li>Загрузка собственных изображений</li>
+                <li>Изменение размера и положения изображений</li>
+                <li>Добавление текстовых подписей</li>
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Link href="/collage-creator">
+                <Button variant="ghost" className="gap-2 text-purple-600">
+                  Создать коллаж <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-2">
+                <Wand2 className="w-6 h-6 text-green-600" />
+              </div>
+              <CardTitle>AI Стилизация</CardTitle>
+              <CardDescription>
+                Применяйте ИИ-стили для преобразования ваших мемов и коллажей
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pb-2">
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Выбор из различных художественных стилей</li>
+                <li>Превращение мемов в картины маслом</li>
+                <li>Применение комикс-эффектов и пиксель-арта</li>
+                <li>Создание уникальных эстетических стилей</li>
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Link href="/meme-generator">
+                <Button variant="ghost" className="gap-2 text-green-600">
+                  Попробовать AI стили <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        </section>
+
+        <section className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="max-w-3xl mx-auto text-center space-y-4">
+            <h2 className="text-xl font-bold">Готовы к творчеству? Просмотрите наши шаблоны</h2>
+            <p className="text-slate-600">
+              Начните с просмотра нашей коллекции шаблонов мемов или загрузите собственные изображения
+            </p>
+            <Link href="/templates">
+              <Button variant="default" className="gap-2">
+                <LayoutTemplate className="w-5 h-5" />
+                Просмотр шаблонов
+              </Button>
+            </Link>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

@@ -76,34 +76,67 @@ export class MemStorage implements IStorage {
   private initializeAiStyles() {
     const defaultStyles: InsertAiStyle[] = [
       {
-        name: "Comic Book",
-        description: "Transform your image into a comic book style illustration",
-        previewUrl: "/api/styles/preview/comic",
-        apiParams: { style: "comic" }
+        name: "Черно-белый",
+        description: "Преобразуйте ваше изображение в черно-белое",
+        previewUrl: "/api/styles/preview/grayscale",
+        apiParams: { filter: "grayscale(100%)" }
       },
       {
-        name: "Oil Painting",
-        description: "Make your meme look like an oil painting",
-        previewUrl: "/api/styles/preview/oil-painting",
-        apiParams: { style: "oil-painting" }
+        name: "Сепия",
+        description: "Добавьте винтажный вид в стиле сепии",
+        previewUrl: "/api/styles/preview/sepia",
+        apiParams: { filter: "sepia(100%)" }
       },
       {
-        name: "Pixel Art",
-        description: "Convert your image to retro pixel art style",
-        previewUrl: "/api/styles/preview/pixel",
-        apiParams: { style: "pixel-art" }
+        name: "Высокая контрастность",
+        description: "Увеличьте контрастность вашего изображения",
+        previewUrl: "/api/styles/preview/contrast",
+        apiParams: { filter: "contrast(200%)" }
       },
       {
-        name: "Vaporwave",
-        description: "Apply vaporwave aesthetics to your image",
-        previewUrl: "/api/styles/preview/vaporwave",
-        apiParams: { style: "vaporwave" }
+        name: "Яркий цвет",
+        description: "Сделайте цвета более насыщенными и яркими",
+        previewUrl: "/api/styles/preview/saturate",
+        apiParams: { filter: "saturate(200%)" }
       },
       {
-        name: "Watercolor",
-        description: "Transform your image into a watercolor painting",
-        previewUrl: "/api/styles/preview/watercolor",
-        apiParams: { style: "watercolor" }
+        name: "Инверсия",
+        description: "Инвертируйте цвета на вашем изображении",
+        previewUrl: "/api/styles/preview/invert",
+        apiParams: { filter: "invert(100%)" }
+      },
+      {
+        name: "Размытие",
+        description: "Добавьте эффект размытия к изображению",
+        previewUrl: "/api/styles/preview/blur",
+        apiParams: { filter: "blur(5px)" }
+      },
+      {
+        name: "Синий оттенок",
+        description: "Добавьте голубой оттенок к изображению",
+        previewUrl: "/api/styles/preview/blue",
+        apiParams: { overlay: "rgba(0, 0, 255, 0.3)" }
+      },
+      {
+        name: "Красный оттенок",
+        description: "Добавьте красный оттенок к изображению",
+        previewUrl: "/api/styles/preview/red",
+        apiParams: { overlay: "rgba(255, 0, 0, 0.3)" }
+      },
+      {
+        name: "Зеленый оттенок",
+        description: "Добавьте зеленый оттенок к изображению",
+        previewUrl: "/api/styles/preview/green",
+        apiParams: { overlay: "rgba(0, 255, 0, 0.3)" }
+      },
+      {
+        name: "Ретро",
+        description: "Применить ретро эффект с легким сепия и виньеткой",
+        previewUrl: "/api/styles/preview/retro",
+        apiParams: { 
+          filter: "sepia(50%) contrast(130%)",
+          overlay: "radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.7) 100%)"
+        }
       }
     ];
 
@@ -113,32 +146,92 @@ export class MemStorage implements IStorage {
   private initializeMemeTemplates() {
     const defaultTemplates: InsertMemeTemplate[] = [
       {
-        name: "Drake Hotline Bling",
-        imageUrl: "https://i.imgflip.com/30b1gx.jpg",
-        isPublic: true,
-        textAreas: [
-          { x: 320, y: 10, width: 300, height: 300, defaultText: "Bad option" },
-          { x: 320, y: 400, width: 300, height: 300, defaultText: "Good option" }
-        ]
-      },
-      {
-        name: "Two Buttons",
-        imageUrl: "https://i.imgflip.com/1g8my4.jpg",
-        isPublic: true,
-        textAreas: [
-          { x: 150, y: 90, width: 140, height: 90, defaultText: "Button 1" },
-          { x: 325, y: 90, width: 140, height: 90, defaultText: "Button 2" },
-          { x: 240, y: 450, width: 200, height: 100, defaultText: "Sweating person" }
-        ]
-      },
-      {
-        name: "Distracted Boyfriend",
+        name: "Отвлекшийся парень",
         imageUrl: "https://i.imgflip.com/1ur9b0.jpg",
         isPublic: true,
         textAreas: [
-          { x: 300, y: 100, width: 160, height: 70, defaultText: "New thing" },
-          { x: 160, y: 100, width: 160, height: 70, defaultText: "Me" },
-          { x: 20, y: 100, width: 160, height: 70, defaultText: "Current thing" }
+          { x: 300, y: 100, width: 160, height: 70, defaultText: "Новая вещь" },
+          { x: 160, y: 100, width: 160, height: 70, defaultText: "Я" },
+          { x: 20, y: 100, width: 160, height: 70, defaultText: "Текущая вещь" }
+        ]
+      },
+      {
+        name: "Мем с Дрейком",
+        imageUrl: "https://i.imgflip.com/30b1gx.jpg",
+        isPublic: true,
+        textAreas: [
+          { x: 320, y: 10, width: 300, height: 300, defaultText: "Плохой вариант" },
+          { x: 320, y: 400, width: 300, height: 300, defaultText: "Хороший вариант" }
+        ]
+      },
+      {
+        name: "Две кнопки",
+        imageUrl: "https://i.imgflip.com/1g8my4.jpg",
+        isPublic: true,
+        textAreas: [
+          { x: 150, y: 90, width: 140, height: 90, defaultText: "Кнопка 1" },
+          { x: 325, y: 90, width: 140, height: 90, defaultText: "Кнопка 2" },
+          { x: 240, y: 450, width: 200, height: 100, defaultText: "Потеющий человек" }
+        ]
+      },
+      {
+        name: "Уходящий парень",
+        imageUrl: "https://i.imgflip.com/1jwhww.jpg",
+        isPublic: true,
+        textAreas: [
+          { x: 240, y: 50, width: 200, height: 100, defaultText: "Уходящая девушка" },
+          { x: 400, y: 300, width: 200, height: 100, defaultText: "Новая девушка" }
+        ]
+      },
+      {
+        name: "Жалующаяся мама",
+        imageUrl: "https://i.imgflip.com/4acd7j.png",
+        isPublic: true,
+        textAreas: [
+          { x: 160, y: 70, width: 300, height: 100, defaultText: "Жалоба 1" },
+          { x: 160, y: 270, width: 300, height: 100, defaultText: "Жалоба 2" },
+          { x: 160, y: 470, width: 300, height: 100, defaultText: "Жалоба 3" }
+        ]
+      },
+      {
+        name: "Один дома",
+        imageUrl: "https://i.imgflip.com/1otk96.jpg",
+        isPublic: true,
+        textAreas: [
+          { x: 350, y: 220, width: 300, height: 100, defaultText: "Текст мема" }
+        ]
+      },
+      {
+        name: "Нервничающий попугай",
+        imageUrl: "https://i.imgflip.com/2o83uh.png",
+        isPublic: true,
+        textAreas: [
+          { x: 160, y: 100, width: 250, height: 100, defaultText: "Волнующая ситуация" }
+        ]
+      },
+      {
+        name: "Умный чернокожий",
+        imageUrl: "https://i.imgflip.com/1h7in3.jpg",
+        isPublic: true,
+        textAreas: [
+          { x: 250, y: 130, width: 300, height: 100, defaultText: "Умная мысль" }
+        ]
+      },
+      {
+        name: "Разговор с байкером",
+        imageUrl: "https://i.imgflip.com/4t0m5.jpg",
+        isPublic: true,
+        textAreas: [
+          { x: 280, y: 50, width: 250, height: 100, defaultText: "Первая фраза" },
+          { x: 280, y: 220, width: 250, height: 100, defaultText: "Вторая фраза" }
+        ]
+      },
+      {
+        name: "Ужасная Реализация",
+        imageUrl: "https://i.imgflip.com/1e7ql7.jpg",
+        isPublic: true,
+        textAreas: [
+          { x: 300, y: 180, width: 260, height: 100, defaultText: "Момент осознания" }
         ]
       }
     ];

@@ -5,12 +5,43 @@ import { z } from "zod";
 import { insertMemeTemplateSchema, insertSavedMemeSchema, insertCollageSchema } from "@shared/schema";
 import fetch from "node-fetch";
 
-// Mock function for AI styling - in a real application, this would call OpenAI or similar
+// Функция для применения AI-стилей к изображениям
+// Так как Node.js не имеет встроенных возможностей для обработки изображений, 
+// мы будем симулировать применение стилей, добавляя информацию о стиле в базу данных.
+// В реальном приложении здесь будет вызов API для обработки изображения.
 async function applyAiStyle(imageBase64: string, styleParams: any): Promise<string> {
-  // In a real implementation, this would call an AI service API
-  // For now, we just return the original image
-  console.log("Applying AI style:", styleParams);
-  return imageBase64;
+  try {
+    console.log("Applying AI style:", styleParams);
+    
+    // В реальном проекте здесь был бы вызов стороннего API для обработки изображения
+    // Например: OpenAI API, Google Cloud Vision API или подобных сервисов.
+    
+    // Для демонстрации мы просто возвращаем исходное изображение
+    // и имитируем применение стиля путем добавления метаданных
+    
+    // Модифицируем данные о примененном стиле для отображения в UI
+    const styleApplied = {
+      name: styleParams.style || "custom",
+      filter: styleParams.filter || null,
+      overlay: styleParams.overlay || null,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Если бы это был реальный проект с C# на бэкенде, здесь бы использовалась 
+    // библиотека System.Drawing или SkiaSharp для обработки изображений
+    
+    console.log("Style applied:", styleApplied);
+    
+    // Так как это всего лишь имитация, мы просто добавляем небольшую задержку
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Возвращаем исходное изображение (в реальном приложении здесь был бы стилизованный вариант)
+    return imageBase64;
+  } catch (error) {
+    console.error('Error in applyAiStyle:', error);
+    // В случае ошибки возвращаем исходное изображение
+    return imageBase64;
+  }
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {

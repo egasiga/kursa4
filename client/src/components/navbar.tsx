@@ -1,59 +1,63 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Image, PenTool, Grid2X2, LayoutTemplate, Home } from "lucide-react";
+import { Image, PenTool, Grid2X2, LayoutTemplate, Home, Settings } from "lucide-react";
 
 export default function Navbar() {
   const [location] = useLocation();
 
   const navItems = [
     {
-      title: "Home",
+      title: "Главная",
       href: "/",
       icon: <Home className="w-5 h-5 mr-2" />,
     },
     {
-      title: "Meme Generator",
+      title: "Генератор Мемов",
       href: "/meme-generator",
       icon: <PenTool className="w-5 h-5 mr-2" />,
     },
     {
-      title: "Collage Creator",
+      title: "Создание Коллажей",
       href: "/collage-creator",
       icon: <Grid2X2 className="w-5 h-5 mr-2" />,
     },
     {
-      title: "Templates",
+      title: "Шаблоны",
       href: "/templates",
       icon: <LayoutTemplate className="w-5 h-5 mr-2" />,
     },
   ];
 
   return (
-    <header className="bg-background border-b sticky top-0 z-10">
-      <div className="container flex justify-between items-center h-16">
+    <header className="bg-slate-800 border-b border-slate-700 sticky top-0 z-10">
+      <div className="flex justify-between items-center h-12 px-4">
         <div className="flex items-center">
           <Link href="/">
-            <a className="flex items-center font-bold text-xl text-primary">
+            <div className="flex items-center font-bold text-xl text-white cursor-pointer">
               <Image className="w-6 h-6 mr-2" />
-              Meme Creator
-            </a>
+              МемМастер Pro
+            </div>
           </Link>
         </div>
         
         <nav className="flex gap-1">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
-              <a
+              <div
                 className={cn(
-                  "flex items-center px-4 py-2 rounded-md hover:bg-accent transition-colors",
-                  location === item.href && "bg-accent text-accent-foreground font-medium"
+                  "flex items-center px-3 py-1 rounded-md text-sm hover:bg-slate-700 transition-colors text-white cursor-pointer",
+                  location === item.href && "bg-slate-700 font-medium"
                 )}
               >
                 {item.icon}
                 <span>{item.title}</span>
-              </a>
+              </div>
             </Link>
           ))}
+          <button className="flex items-center px-3 py-1 rounded-md text-sm hover:bg-slate-700 transition-colors text-white">
+            <Settings className="w-5 h-5 mr-2" />
+            <span>Настройки</span>
+          </button>
         </nav>
       </div>
     </header>
