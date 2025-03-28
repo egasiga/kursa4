@@ -834,8 +834,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Добавляем стили Magenta в список
         magentaStyles.forEach(style => {
           // Устанавливаем transformType для правильной обработки, если не установлен
-          if (!style.apiParams.transformType) {
-            style.apiParams.transformType = "magenta";
+          if (style.apiParams && typeof style.apiParams === 'object') {
+            const params = style.apiParams as Record<string, any>;
+            if (!params.transformType) {
+              params.transformType = "magenta";
+            }
           }
         });
         
@@ -884,8 +887,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (foundStyle) {
           style = foundStyle;
           // Устанавливаем transformType для правильной обработки, если не установлен
-          if (!style.apiParams.transformType) {
-            style.apiParams.transformType = "magenta";
+          if (style.apiParams && typeof style.apiParams === 'object') {
+            const params = style.apiParams as Record<string, any>;
+            if (!params.transformType) {
+              params.transformType = "magenta";
+            }
           }
         }
       } catch (magentaError) {

@@ -37,13 +37,28 @@ def save_image(image, output_path):
     image_pil.save(output_path)
 
 def main():
-    if len(sys.argv) != 4:
-        print("Использование: python magenta_styler.py content_image style_image output_image")
+    # Проверяем аргументы командной строки
+    if len(sys.argv) < 4:
+        print("Использование: python magenta_styler.py content_image style_image output_image [style_intensity]")
         sys.exit(1)
     
     content_image_path = sys.argv[1]
     style_image_path = sys.argv[2]
     output_image_path = sys.argv[3]
+    
+    # Получаем параметр интенсивности стиля, если он предоставлен
+    # По умолчанию 0.4 (40% оригинала, 60% стиля)
+    style_intensity = 0.4
+    if len(sys.argv) >= 5:
+        try:
+            intensity_param = float(sys.argv[4])
+            # Преобразуем параметр интенсивности из UI (0.0-2.0) в параметр смешивания (0.6-0.1)
+            # Чем выше значение из UI, тем меньше должно быть значение blend_factor
+            # для получения более сильного эффекта
+            style_intensity = max(0.1, min(0.7, 0.7 - (intensity_param / 5.0)))
+            print(f"Установлена интенсивность стиля: {intensity_param} (blend_factor: {style_intensity})")
+        except ValueError:
+            print(f"Ошибка при парсинге параметра интенсивности: {sys.argv[4]}. Используем значение по умолчанию.")
     
     print(f"Загрузка модели из TensorFlow Hub...")
     start_time = time.time()
@@ -72,16 +87,26 @@ def main():
     outputs = hub_module(tf.constant(content_image), tf.constant(style_image))
     stylized_image = outputs[0]
     
-    # Уменьшаем интенсивность стилизации, смешивая с оригинальным изображением
-    # Это позволяет сохранить больше деталей из оригинала, при этом применяя
-    # художественные элементы из стилизованного изображения
-    # 
-    # Используем значение 0.65 (снижение интенсивности на 35%)
-    # При таком значении изображения остаются хорошо узнаваемыми,
-    # но при этом имеют достаточную степень стилизации
-    # 
-    # Чем ближе blend_factor к 1, тем больше оригинала сохраняется
-    blend_factor = 0.65  
+    # Проверяем и корректируем размеры изображений перед смешиванием
+    content_shape = tf.shape(content_image)
+    stylized_shape = tf.shape(stylized_image)
+    
+    print(f"Размер контентного изображения: {content_shape}")
+    print(f"Размер стилизованного изображения: {stylized_shape}")
+    
+    # Изменяем размер стилизованного изображения, чтобы он совпадал с оригиналом
+    if not tf.reduce_all(tf.equal(content_shape, stylized_shape)):
+        print("Изменение размера стилизованного изображения для соответствия оригиналу")
+        stylized_image = tf.image.resize(
+            stylized_image,
+            [content_shape[1], content_shape[2]],
+            method=tf.image.ResizeMethod.LANCZOS3
+        )
+        print(f"Новый размер стилизованного изображения: {tf.shape(stylized_image)}")
+    
+    # Используем рассчитанное ранее значение интенсивности стиля для смешивания
+    # style_intensity - это сколько оригинала сохраняем (0.1 - мало, 0.7 - много)
+    blend_factor = style_intensity
     
     # Линейная интерполяция между оригинальным и стилизованным изображением
     # content_image * blend_factor + stylized_image * (1 - blend_factor)
