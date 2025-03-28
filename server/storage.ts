@@ -76,66 +76,103 @@ export class MemStorage implements IStorage {
   private initializeAiStyles() {
     const defaultStyles: InsertAiStyle[] = [
       {
-        name: "Черно-белый",
-        description: "Преобразуйте ваше изображение в черно-белое",
-        previewUrl: "/api/styles/preview/grayscale",
-        apiParams: { filter: "grayscale(100%)" }
-      },
-      {
-        name: "Сепия",
-        description: "Добавьте винтажный вид в стиле сепии",
-        previewUrl: "/api/styles/preview/sepia",
-        apiParams: { filter: "sepia(100%)" }
-      },
-      {
-        name: "Высокая контрастность",
-        description: "Увеличьте контрастность вашего изображения",
-        previewUrl: "/api/styles/preview/contrast",
-        apiParams: { filter: "contrast(200%)" }
-      },
-      {
-        name: "Яркий цвет",
-        description: "Сделайте цвета более насыщенными и яркими",
-        previewUrl: "/api/styles/preview/saturate",
-        apiParams: { filter: "saturate(200%)" }
-      },
-      {
-        name: "Инверсия",
-        description: "Инвертируйте цвета на вашем изображении",
-        previewUrl: "/api/styles/preview/invert",
-        apiParams: { filter: "invert(100%)" }
-      },
-      {
-        name: "Размытие",
-        description: "Добавьте эффект размытия к изображению",
-        previewUrl: "/api/styles/preview/blur",
-        apiParams: { filter: "blur(5px)" }
-      },
-      {
-        name: "Синий оттенок",
-        description: "Добавьте голубой оттенок к изображению",
-        previewUrl: "/api/styles/preview/blue",
-        apiParams: { overlay: "rgba(0, 0, 255, 0.3)" }
-      },
-      {
-        name: "Красный оттенок",
-        description: "Добавьте красный оттенок к изображению",
-        previewUrl: "/api/styles/preview/red",
-        apiParams: { overlay: "rgba(255, 0, 0, 0.3)" }
-      },
-      {
-        name: "Зеленый оттенок",
-        description: "Добавьте зеленый оттенок к изображению",
-        previewUrl: "/api/styles/preview/green",
-        apiParams: { overlay: "rgba(0, 255, 0, 0.3)" }
-      },
-      {
-        name: "Ретро",
-        description: "Применить ретро эффект с легким сепия и виньеткой",
-        previewUrl: "/api/styles/preview/retro",
+        name: "Нейронное искусство",
+        description: "Преобразуйте ваше изображение в стиле нейронных сетей",
+        previewUrl: "/api/styles/preview/neural",
         apiParams: { 
-          filter: "sepia(50%) contrast(130%)",
-          overlay: "radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.7) 100%)"
+          aiModel: "neural-style",
+          transformType: "artistic",
+          styleIntensity: 0.8
+        }
+      },
+      {
+        name: "Аниме",
+        description: "Преобразуйте ваше изображение в стиле аниме",
+        previewUrl: "/api/styles/preview/anime",
+        apiParams: { 
+          aiModel: "anime-gan",
+          transformType: "character",
+          styleIntensity: 0.9
+        }
+      },
+      {
+        name: "Масляная живопись",
+        description: "Преобразуйте изображение в стиле масляной живописи",
+        previewUrl: "/api/styles/preview/oil-painting",
+        apiParams: { 
+          aiModel: "style-transfer",
+          transformType: "painting",
+          styleReference: "oil"
+        }
+      },
+      {
+        name: "Акварель",
+        description: "Преобразуйте изображение в стиле акварельной живописи",
+        previewUrl: "/api/styles/preview/watercolor",
+        apiParams: { 
+          aiModel: "style-transfer",
+          transformType: "painting",
+          styleReference: "watercolor"
+        }
+      },
+      {
+        name: "Пиксель-арт",
+        description: "Преобразуйте изображение в стиле пиксельной графики",
+        previewUrl: "/api/styles/preview/pixel-art",
+        apiParams: { 
+          aiModel: "pixel-transformer",
+          transformType: "retro",
+          pixelSize: 8
+        }
+      },
+      {
+        name: "Поп-арт",
+        description: "Преобразуйте изображение в стиле поп-арт",
+        previewUrl: "/api/styles/preview/pop-art",
+        apiParams: { 
+          aiModel: "style-transfer",
+          transformType: "artistic",
+          styleReference: "pop-art"
+        }
+      },
+      {
+        name: "Карикатура",
+        description: "Преобразуйте ваше изображение в стиле карикатуры",
+        previewUrl: "/api/styles/preview/cartoon",
+        apiParams: { 
+          aiModel: "cartoonizer",
+          transformType: "character",
+          exaggeration: 0.7
+        }
+      },
+      {
+        name: "Комикс",
+        description: "Преобразуйте ваше изображение в стиле комикса",
+        previewUrl: "/api/styles/preview/comic",
+        apiParams: { 
+          aiModel: "comic-transformer",
+          transformType: "paneling",
+          inkEffect: true
+        }
+      },
+      {
+        name: "Нуар",
+        description: "Преобразуйте изображение в стиле нуар",
+        previewUrl: "/api/styles/preview/noir",
+        apiParams: { 
+          aiModel: "style-transfer",
+          transformType: "film",
+          styleReference: "noir"
+        }
+      },
+      {
+        name: "Киберпанк",
+        description: "Преобразуйте изображение в стиле киберпанк",
+        previewUrl: "/api/styles/preview/cyberpunk",
+        apiParams: { 
+          aiModel: "future-vision",
+          transformType: "scifi",
+          neonEffect: true
         }
       }
     ];

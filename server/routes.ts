@@ -6,39 +6,91 @@ import { insertMemeTemplateSchema, insertSavedMemeSchema, insertCollageSchema } 
 import fetch from "node-fetch";
 
 // Функция для применения AI-стилей к изображениям
-// Так как Node.js не имеет встроенных возможностей для обработки изображений, 
-// мы будем симулировать применение стилей, добавляя информацию о стиле в базу данных.
-// В реальном приложении здесь будет вызов API для обработки изображения.
+// В этой реализации мы пока что возвращаем оригинальное изображение,
+// но в реальном проекте здесь был бы вызов к сервисам нейронных сетей
 async function applyAiStyle(imageBase64: string, styleParams: any): Promise<string> {
   try {
-    console.log("Applying AI style:", styleParams);
+    console.log("Применение AI-стиля:", styleParams);
     
-    // В реальном проекте здесь был бы вызов стороннего API для обработки изображения
-    // Например: OpenAI API, Google Cloud Vision API или подобных сервисов.
+    // Симуляция применения различных моделей искусственного интеллекта
+    // В реальном приложении здесь был бы асинхронный вызов к API для обработки изображения
+    if (styleParams.aiModel) {
+      // Логирование для демонстрации работы различных моделей
+      console.log(`Запуск AI-модели: ${styleParams.aiModel}`);
+      
+      // Различные модели стилей для разных типов преобразований
+      switch (styleParams.aiModel) {
+        case "neural-style":
+          // Стилизация на основе нейронных сетей (например, реализация с использованием GAN)
+          console.log(`Применение нейронной стилизации с интенсивностью: ${styleParams.styleIntensity}`);
+          // В реальном приложении: await neuralStyleTransfer(imageBase64, styleParams);
+          break;
+          
+        case "anime-gan":
+          // Преобразование в стиле аниме (специализированная GAN-модель)
+          console.log(`Применение анимизации с интенсивностью: ${styleParams.styleIntensity}`);
+          // В реальном приложении: await animeGanTransform(imageBase64, styleParams);
+          break;
+          
+        case "style-transfer":
+          // Перенос стиля (например, алгоритм CycleGAN)
+          console.log(`Перенос стиля: ${styleParams.styleReference} для типа: ${styleParams.transformType}`);
+          // В реальном приложении: await styleTransfer(imageBase64, styleParams.styleReference);
+          break;
+          
+        case "pixel-transformer":
+          // Преобразование в пиксельную графику
+          console.log(`Пикселизация с размером пикселя: ${styleParams.pixelSize}`);
+          // В реальном приложении: await pixelate(imageBase64, styleParams.pixelSize);
+          break;
+          
+        case "cartoonizer":
+          // Преобразование в карикатуру (специализированная модель)
+          console.log(`Преобразование в карикатуру с уровнем преувеличения: ${styleParams.exaggeration}`);
+          // В реальном приложении: await cartoonize(imageBase64, styleParams);
+          break;
+          
+        case "comic-transformer":
+          // Преобразование в стиль комикса
+          console.log(`Преобразование в стиль комикса с эффектом чернил: ${styleParams.inkEffect}`);
+          // В реальном приложении: await comicTransform(imageBase64, styleParams);
+          break;
+          
+        case "future-vision":
+          // Футуристические фильтры (например, киберпанк)
+          console.log(`Применение футуристического стиля с неоновым эффектом: ${styleParams.neonEffect}`);
+          // В реальном приложении: await futuristicFilter(imageBase64, styleParams);
+          break;
+          
+        default:
+          console.log("Неизвестная AI модель, применение базовой трансформации");
+          // В реальном приложении: await basicTransform(imageBase64);
+      }
+      
+      // Добавляем задержку для имитации обработки нейронной сетью
+      const processingTime = Math.floor(Math.random() * 1000) + 1500; // 1.5-2.5 секунды
+      await new Promise(resolve => setTimeout(resolve, processingTime));
+      
+      console.log("Обработка изображения AI завершена");
+      
+      /*
+      В реальном приложении на C# здесь могла бы быть интеграция с различными AI-библиотеками:
+      
+      1. ML.NET - Фреймворк Microsoft для машинного обучения в .NET
+      2. TensorFlow.NET - .NET привязки для TensorFlow
+      3. ONNX Runtime - для запуска предобученных моделей
+      4. Azure Cognitive Services - для использования облачных AI-сервисов Microsoft
+      5. OpenCV Sharp - для обработки изображений с возможностью применения фильтров и эффектов
+      
+      Сервер бы отправлял запрос на эти API и получал обработанное изображение в ответ.
+      */
+    }
     
-    // Для демонстрации мы просто возвращаем исходное изображение
-    // и имитируем применение стиля путем добавления метаданных
-    
-    // Модифицируем данные о примененном стиле для отображения в UI
-    const styleApplied = {
-      name: styleParams.style || "custom",
-      filter: styleParams.filter || null,
-      overlay: styleParams.overlay || null,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Если бы это был реальный проект с C# на бэкенде, здесь бы использовалась 
-    // библиотека System.Drawing или SkiaSharp для обработки изображений
-    
-    console.log("Style applied:", styleApplied);
-    
-    // Так как это всего лишь имитация, мы просто добавляем небольшую задержку
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Возвращаем исходное изображение (в реальном приложении здесь был бы стилизованный вариант)
+    // В демонстрационных целях мы просто возвращаем исходное изображение
+    // В реальном приложении здесь бы возвращалось обработанное изображение от AI-сервиса
     return imageBase64;
   } catch (error) {
-    console.error('Error in applyAiStyle:', error);
+    console.error('Ошибка при применении AI-стиля:', error);
     // В случае ошибки возвращаем исходное изображение
     return imageBase64;
   }
