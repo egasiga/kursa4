@@ -172,37 +172,74 @@ async function applyLocalImageFilters(base64Data: string, styleParams: any): Pro
         
         case "Набросок карандашом":
         case "Pencil Sketch":
-          // Преобразование в черно-белый набросок
-          sharpImage = sharpImage
-            .grayscale()
-            .modulate({ brightness: 1.1 })
-            .negate()
-            .blur(0.5)
-            .modulate({ brightness: 0.98 })
-            .negate();
+          // Улучшенный алгоритм карандашного наброска
+          {
+            // Создаем копию для инвертированного размытого изображения
+            let invertedBlurred = await sharpImage
+              .clone()
+              .grayscale()
+              .negate()
+              .blur(0.5)
+              .toBuffer();
+            
+            // Подготавливаем основное изображение
+            sharpImage = sharpImage
+              .grayscale()
+              // Слегка повышаем яркость
+              .modulate({ brightness: 1.1 });
+
+            // Создаем "делительное смешивание" - имитация карандашного эффекта
+            sharpImage = sharp(await sharpImage.toBuffer())
+              // Накладываем инвертированное размытое изображение в режиме делителя
+              // Это создает эффект деления яркостей пикселей
+              .composite([
+                { 
+                  input: invertedBlurred,
+                  blend: 'multiply'  // Используем multiply вместо divide
+                }
+              ])
+              // Финальные корректировки
+              .modulate({ brightness: 1.05 })
+              .linear(1.1, 0);  // Повышаем контраст
+          }
           break;
         
         case "Тушь":
         case "Ink Drawing":
-          // Имитация рисунка тушью: высокий контраст, четкие края
+          // Имитация рисунка тушью: смягченная версия для предотвращения черных изображений
           sharpImage = sharpImage
             .grayscale()
-            .threshold(128)
-            .modulate({ brightness: 1.2 });
+            // Вместо жесткого порога используем адаптивное усиление контуров
+            .convolve({
+              width: 3,
+              height: 3,
+              kernel: [-1, -1, -1, -1, 12, -1, -1, -1, -1],
+              scale: 4 // Делим на большее значение для смягчения эффекта
+            })
+            // Корректируем яркость для предотвращения черного изображения
+            .modulate({ brightness: 1.5 });
           break;
         
         case "Контурный рисунок":
         case "Line Drawing":
-          // Имитация контурного рисунка: выделение краев
+          // Имитация контурного рисунка: выделение краев (улучшенная версия)
           sharpImage = sharpImage
             .grayscale()
+            // Подготовка изображения - легкое размытие для удаления шума
+            .blur(0.5)
+            // Улучшенный фильтр выделения краев
             .convolve({
               width: 3,
               height: 3,
-              kernel: [0, 1, 0, 1, -4, 1, 0, 1, 0] 
+              kernel: [0, 1, 0, 1, -4, 1, 0, 1, 0],
+              scale: 1.5 // Смягчаем эффект
             })
+            // Нормализация с ограничением для предотвращения экстремальных результатов
+            .linear(1.0, 20) // Добавляем смещение, чтобы избежать полностью черного изображения
             .normalize()
-            .negate();
+            .negate()
+            // Финальная коррекция для видимости линий
+            .modulate({ brightness: 1.05 });
           break;
         
         case "Пиксель-арт":
@@ -220,28 +257,35 @@ async function applyLocalImageFilters(base64Data: string, styleParams: any): Pro
         
         case "Аниме":
         case "Anime":
-          // Имитация аниме-стиля: повышенная насыщенность, четкие линии
+          // Имитация аниме-стиля: смягченная версия
           sharpImage = sharpImage
-            .modulate({ saturation: 1.4 * intensity })
+            // Умеренная насыщенность
+            .modulate({ saturation: 1.2 * intensity, brightness: 1.05 })
+            // Смягченная конволюция с повышенным масштабом
             .convolve({
               width: 3,
               height: 3,
               kernel: [-1, -1, -1, -1, 9, -1, -1, -1, -1],
-              scale: 1
-            });
+              scale: 4 // Увеличиваем масштаб для ослабления эффекта
+            })
+            // Добавляем легкое размытие для смягчения линий
+            .blur(0.2);
           break;
         
         case "Комикс":
         case "Comic":
-          // Имитация комикса: четкие линии, повышенная контрастность
+          // Имитация комикса: более мягкий и стабильный вариант
           sharpImage = sharpImage
-            .modulate({ saturation: 1.3 * intensity })
+            .modulate({ saturation: 1.2 * intensity })
+            // Смягчаем фильтр Лапласа, добавляя scale
             .convolve({
               width: 3,
               height: 3,
               kernel: [-1, -1, -1, -1, 8, -1, -1, -1, -1],
-              scale: 1
-            });
+              scale: 3 // Увеличиваем масштаб для ослабления эффекта
+            })
+            // Добавляем легкое размытие для смягчения линий
+            .blur(0.3);
           break;
         
         case "Неон":
@@ -268,15 +312,17 @@ async function applyLocalImageFilters(base64Data: string, styleParams: any): Pro
         
         case "Карикатура":
         case "Caricature":
-          // Имитация карикатуры: высокая контрастность, упрощение
+          // Имитация карикатуры: исправленная версия для предотвращения черных изображений
           sharpImage = sharpImage
-            .modulate({ saturation: 1.5 * intensity })
+            .modulate({ saturation: 1.3 * intensity })
             .convolve({
               width: 3,
               height: 3,
-              kernel: [-1, -1, -1, -1, 9, -1, -1, -1, -1]
+              kernel: [-1, -1, -1, -1, 9, -1, -1, -1, -1],
+              scale: 2 // Смягчаем эффект
             })
-            .threshold(150);
+            // Вместо жесткого порога используем контраст
+            .linear(1.3, 0); // Усиливаем контраст без риска получить черное изображение
           break;
           
         default:
