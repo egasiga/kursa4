@@ -74,6 +74,7 @@ interface CollageLayoutSelectorProps {
   onCanvasReady: (canvas: HTMLCanvasElement) => void;
   onTextRender: () => void;
   onRemoveImage: (index: number) => void;
+  styledImage?: string | null; // Добавляем возможность передавать стилизованное изображение
 }
 
 export default function CollageLayoutSelector({
@@ -84,6 +85,7 @@ export default function CollageLayoutSelector({
   onCanvasReady,
   onTextRender,
   onRemoveImage,
+  styledImage,
 }: CollageLayoutSelectorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
@@ -109,7 +111,39 @@ export default function CollageLayoutSelector({
     const layoutConfig = LAYOUTS[layout.id as keyof typeof LAYOUTS];
     if (!layoutConfig) return;
 
-    // Load images
+    // Если есть стилизованное изображение, используем его вместо оригиналов
+    if (styledImage) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        // Отображаем стилизованное изображение на весь холст
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Применяем фильтры
+        if (filters.brightness !== 100 || filters.contrast !== 100 || filters.saturation !== 100) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          ctx.filter = `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%)`;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          ctx.filter = "none";
+        }
+        
+        // Render text content
+        onTextRender();
+        
+        // Notify parent that canvas is ready
+        onCanvasReady(canvas);
+      };
+      img.onerror = () => {
+        console.error("Error loading styled image:", styledImage);
+        // Если не удалось загрузить стилизованное изображение, пробуем загрузить оригиналы
+        loadImages();
+      };
+      img.src = styledImage;
+      return;
+    }
+
+    // Load original images
     const loadImages = async () => {
       imagesRef.current = [];
 
@@ -262,7 +296,7 @@ export default function CollageLayoutSelector({
       onCanvasReady(canvas);
     }
     
-  }, [layout, sourceImages, filters, onCanvasReady, onTextRender]);
+  }, [layout, sourceImages, filters, onCanvasReady, onTextRender, styledImage]);
 
   return (
     <div className="relative w-full h-full flex flex-col items-center">

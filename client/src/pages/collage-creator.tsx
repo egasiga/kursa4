@@ -33,6 +33,7 @@ export default function CollageCreator() {
   const [selectedAiStyle, setSelectedAiStyle] = useState<string>("none");
   const [textContent, setTextContent] = useState<{ id: string; text: string; style: any; position: { x: number; y: number } }[]>([]);
   const [sourceImages, setSourceImages] = useState<string[]>([]);
+  const [styledImage, setStyledImage] = useState<string | null>(null); // Сохраняем стилизованное изображение отдельно
   const [filters, setFilters] = useState({
     brightness: 100,
     contrast: 100,
@@ -81,8 +82,12 @@ export default function CollageCreator() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Apply the styled image to the canvas
+      // Apply the styled image to the canvas and store permanently
       if (canvasRef && data.styledImage) {
+        // Сохраняем стилизованное изображение в отдельном состоянии
+        setStyledImage(data.styledImage);
+        
+        // Отображаем стилизованное изображение на холсте
         const ctx = canvasRef.getContext("2d");
         if (ctx) {
           const img = new Image();
@@ -94,17 +99,20 @@ export default function CollageCreator() {
           };
           img.src = data.styledImage;
           
-          // Важно: обновляем исходные изображения, заменяя их на стилизованные
-          // Если у нас только одно изображение, заменяем его целиком
-          if (sourceImages.length === 1) {
-            setSourceImages([data.styledImage]);
-          } 
-          // Если у нас коллаж с множеством изображений, мы не можем разделить их
-          // Поэтому создаем новый массив с одним стилизованным изображением всего коллажа
-          else if (sourceImages.length > 1) {
-            // Сохраняем стилизованную версию как новый единственный исходный файл
-            setSourceImages([data.styledImage]);
-          }
+          // Используем подход с сохранением ссылки на оригинальное стилизованное изображение
+          // Важно: сохраняем копию изображения, чтобы избежать проблем с ссылками
+          const styledImageCopy = data.styledImage; 
+          setSourceImages(prev => {
+            // Если у нас только один источник, заменяем его
+            if (prev.length === 1) {
+              return [styledImageCopy];
+            } 
+            // Если у нас несколько изображений, они объединяются в коллаж
+            // и заменяем всё одним стилизованным изображением коллажа
+            else {
+              return [styledImageCopy];
+            }
+          });
         }
       }
       
@@ -307,6 +315,7 @@ export default function CollageCreator() {
                 onCanvasReady={setCanvasRef}
                 onTextRender={renderTextOnCanvas}
                 onRemoveImage={handleRemoveImage}
+                styledImage={styledImage}
               />
             </CardContent>
           </Card>
