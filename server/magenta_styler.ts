@@ -490,7 +490,7 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Масляная живопись",
-        styleIntensity: 1.0, // Более высокая интенсивность для более заметного эффекта
+        styleIntensity: 1.5, // Высокая интенсивность для заметного эффекта
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в стиле масляной живописи с выразительными мазками и насыщенными цветами"
       },
@@ -503,7 +503,7 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Акварель",
-        styleIntensity: 1.0,
+        styleIntensity: 1.5,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в нежный акварельный стиль с прозрачными красками и мягкими переходами"
       },
@@ -516,7 +516,7 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Набросок карандашом",
-        styleIntensity: 1.0,
+        styleIntensity: 1.8,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в детализированный карандашный набросок с тонкими линиями и тенями"
       },
@@ -529,7 +529,7 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Пиксель-арт",
-        styleIntensity: 1.0,
+        styleIntensity: 2.0,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в стиль пиксельной графики с ограниченной цветовой палитрой"
       },
@@ -542,7 +542,7 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Аниме",
-        styleIntensity: 1.0,
+        styleIntensity: 1.7,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в аниме-стиль с характерными чертами японской анимации"
       },
@@ -555,7 +555,7 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Ван Гог",
-        styleIntensity: 1.0,
+        styleIntensity: 1.8,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в стиле художника Винсента Ван Гога с характерными завихрениями и яркими цветами"
       },

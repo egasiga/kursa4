@@ -52,10 +52,10 @@ def main():
     if len(sys.argv) >= 5:
         try:
             intensity_param = float(sys.argv[4])
-            # Преобразуем параметр интенсивности из UI (0.0-2.0) в параметр смешивания (0.6-0.1)
+            # Преобразуем параметр интенсивности из UI (0.0-2.0) в параметр смешивания (0.5-0.05)
             # Чем выше значение из UI, тем меньше должно быть значение blend_factor
             # для получения более сильного эффекта
-            style_intensity = max(0.1, min(0.7, 0.7 - (intensity_param / 5.0)))
+            style_intensity = max(0.05, min(0.5, 0.5 - (intensity_param / 5.0)))
             print(f"Установлена интенсивность стиля: {intensity_param} (blend_factor: {style_intensity})")
         except ValueError:
             print(f"Ошибка при парсинге параметра интенсивности: {sys.argv[4]}. Используем значение по умолчанию.")
