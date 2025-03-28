@@ -36,70 +36,61 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
     const huggingFaceEnabled = !useLocalFiltersOnly && process.env.HUGGINGFACE_API_KEY && process.env.HUGGINGFACE_API_KEY.length > 0;
     const openaiEnabled = !useLocalFiltersOnly && process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.length > 0;
     
-    // Приоритезируем безопасную последовательность вызовов
-    if (useLocalFiltersOnly || (!huggingFaceEnabled && !openaiEnabled)) {
-      // Используем локальные фильтры без API
+    // Пробуем различные методы стилизации в порядке предпочтения
+    
+    // 1. Если нам разрешено использовать API и есть ключ Hugging Face, пробуем его первым
+    if (!useLocalFiltersOnly && huggingFaceEnabled) {
       try {
-        // Сначала пробуем Sharp фильтры (новая реализация)
-        const { applyImageStyles } = await import('./image_filters');
-        console.log("Используем бесплатные фильтры Sharp для стилизации");
-        return await applyImageStyles(imageBase64, styleParams);
-      } catch (sharpError) {
-        console.error("Ошибка при применении Sharp фильтров:", sharpError);
-        
-        try {
-          // Запасной вариант - используем Jimp
-          console.log("Используем бесплатные фильтры Jimp для стилизации");
-          const { jimpStyleImage } = await import('./jimp_styler');
-          return await jimpStyleImage(imageBase64, styleParams);
-        } catch (jimpError) {
-          console.error("Ошибка при применении Jimp фильтров:", jimpError);
-          
-          // Последняя попытка - применяем базовые фильтры Sharp
-          console.log("Используем базовые фильтры Sharp");
-          const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-          return await applyArtisticFilters(imageBase64, base64Data, styleParams);
-        }
+        console.log("Используем Hugging Face API");
+        const { huggingFaceStyleImage } = await import('./hugging_face_styler');
+        return await huggingFaceStyleImage(imageBase64, styleParams);
+      } catch (hfError) {
+        console.error('Ошибка при работе с Hugging Face API:', hfError);
+        // Продолжаем со следующим методом
       }
-    } else {
-      // Пробуем API сервисы
-      if (huggingFaceEnabled) {
-        try {
-          console.log("Пробуем использовать Hugging Face API");
-          const { huggingFaceStyleImage } = await import('./hugging_face_styler');
-          return await huggingFaceStyleImage(imageBase64, styleParams);
-        } catch (hfError) {
-          console.error('Ошибка Hugging Face API:', hfError);
-        }
-      }
-      
-      if (openaiEnabled) {
-        try {
-          console.log("Пробуем использовать OpenAI API");
-          const { aiStyleImage } = await import('./ai_styler');
-          return await aiStyleImage(imageBase64, styleParams);
-        } catch (openaiError) {
-          console.error('Ошибка OpenAI API:', openaiError);
-        }
-      }
-      
-      // Если ни один API не сработал, возвращаемся к локальным фильтрам
+    }
+    
+    // 2. Если нам разрешено использовать API и есть ключ OpenAI, пробуем его вторым
+    if (!useLocalFiltersOnly && openaiEnabled) {
       try {
-        const { applyImageStyles } = await import('./image_filters');
-        console.log("API не сработали, используем Sharp фильтры");
-        return await applyImageStyles(imageBase64, styleParams);
-      } catch (finalError) {
-        console.error('Ошибка при попытке использовать локальные фильтры:', finalError);
-        
-        // В самом крайнем случае пробуем Jimp
-        try {
-          const { jimpStyleImage } = await import('./jimp_styler');
-          return await jimpStyleImage(imageBase64, styleParams);
-        } catch (ultimateError) {
-          console.error('Все методы стилизации не сработали, возвращаем исходное изображение:', ultimateError);
-          return imageBase64;
-        }
+        console.log("Используем OpenAI API");
+        const { aiStyleImage } = await import('./ai_styler');
+        return await aiStyleImage(imageBase64, styleParams);
+      } catch (openaiError) {
+        console.error('Ошибка при работе с OpenAI API:', openaiError);
+        // Продолжаем со следующим методом
       }
+    }
+    
+    // 3. Пробуем Sharp фильтры
+    try {
+      console.log("Используем Sharp фильтры");
+      const { applyImageStyles } = await import('./image_filters');
+      return await applyImageStyles(imageBase64, styleParams);
+    } catch (sharpError) {
+      console.error("Ошибка при применении Sharp фильтров:", sharpError);
+      // Продолжаем со следующим методом
+    }
+    
+    // 4. Пробуем Jimp фильтры
+    try {
+      console.log("Используем Jimp фильтры");
+      const { jimpStyleImage } = await import('./jimp_styler');
+      return await jimpStyleImage(imageBase64, styleParams);
+    } catch (jimpError) {
+      console.error("Ошибка при применении Jimp фильтров:", jimpError);
+      // Продолжаем со следующим методом
+    }
+    
+    // 5. В крайнем случае, используем базовые фильтры Sharp напрямую
+    try {
+      console.log("Используем базовые фильтры Sharp напрямую");
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+      return await applyArtisticFilters(imageBase64, base64Data, styleParams);
+    } catch (basicError) {
+      console.error("Ошибка при применении базовых фильтров:", basicError);
+      // Возвращаем исходное изображение, если все методы не сработали
+      return imageBase64;
     }
   } catch (error) {
     console.error('Критическая ошибка при применении художественного стиля:', error);
