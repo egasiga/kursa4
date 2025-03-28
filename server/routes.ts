@@ -6,8 +6,8 @@ import { insertMemeTemplateSchema, insertSavedMemeSchema, insertCollageSchema, i
 import fetch from "node-fetch";
 
 // Функция для применения AI-стилей к изображениям
-// В этой реализации мы используем Google Magenta (TensorFlow Hub) и WISE
-// для стилизации изображений без необходимости в API ключах
+// В этой реализации мы используем OpenAI API через Python-скрипт
+// для настоящей AI-стилизации изображений
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { writeFile, readFile, unlink } from 'fs/promises';
@@ -15,8 +15,6 @@ import { mkdtempSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import sharp from 'sharp';
-import { magentaStyleImage, getAvailableAiStyles as getMagentaStyles } from './magenta_styler';
-import { wiseStyleImage, getAvailableWiseStyles } from './wise_styler';
 
 // Преобразуем exec в промис для удобства использования
 const execPromise = promisify(exec);
@@ -31,33 +29,15 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
   try {
     console.log("Applying style:", styleParams);
     
-    // Выбираем метод стилизации в зависимости от параметров
-    const transformType = styleParams.transformType || 'magenta';
-    
-    switch(transformType) {
-      case 'wise':
-        // Используем WISE для стилизации
-        try {
-          console.log("Используем WISE для высококачественной стилизации");
-          return await wiseStyleImage(imageBase64, styleParams);
-        } catch (wiseError) {
-          console.error('Ошибка при работе с WISE:', wiseError);
-          // Если WISE не сработал, пробуем Magenta как запасной вариант
-          console.log("Пробуем использовать Magenta как запасной вариант");
-          return await magentaStyleImage(imageBase64, styleParams);
-        }
-        
-      case 'magenta':
-      default:
-        // По умолчанию используем Google Magenta (TensorFlow Hub)
-        try {
-          console.log("Используем Google Magenta (TensorFlow Hub)");
-          return await magentaStyleImage(imageBase64, styleParams);
-        } catch (magentaError) {
-          console.error('Ошибка при работе с Google Magenta:', magentaError);
-          // В случае ошибки возвращаем исходное изображение
-          return imageBase64;
-        }
+    // Используем только Google Magenta (TensorFlow Hub)
+    try {
+      console.log("Используем Google Magenta (TensorFlow Hub)");
+      const { magentaStyleImage } = await import('./magenta_styler');
+      return await magentaStyleImage(imageBase64, styleParams);
+    } catch (magentaError) {
+      console.error('Ошибка при работе с Google Magenta:', magentaError);
+      // В случае ошибки возвращаем исходное изображение
+      return imageBase64;
     }
   } catch (error) {
     console.error('Критическая ошибка при применении художественного стиля:', error);
@@ -844,35 +824,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Styles
   app.get("/api/styles", async (req: Request, res: Response) => {
     try {
-      // Получаем стили из доступных источников (WISE и Magenta)
+      // Получаем стили исключительно из Magenta (TensorFlow Hub)
       let allStyles: any[] = [];
       
-      // 1. Сначала загружаем стили из WISE
       try {
-        const wiseStyles = getAvailableWiseStyles();
-        
-        // Добавляем стили WISE в список
-        wiseStyles.forEach((style: any) => {
-          // Устанавливаем transformType для правильной обработки
-          if (style.apiParams && typeof style.apiParams === 'object') {
-            const params = style.apiParams as Record<string, any>;
-            if (!params.transformType) {
-              params.transformType = "wise";
-            }
-          }
-        });
-        
-        allStyles = [...wiseStyles];
-      } catch (wiseError) {
-        console.error('Ошибка при загрузке стилей из WISE:', wiseError);
-      }
-      
-      // 2. Затем добавляем стили из Magenta
-      try {
-        const magentaStyles = getMagentaStyles();
+        const { getAvailableAiStyles } = await import('./magenta_styler');
+        const magentaStyles = getAvailableAiStyles();
         
         // Добавляем стили Magenta в список
-        magentaStyles.forEach((style: any) => {
+        magentaStyles.forEach(style => {
           // Устанавливаем transformType для правильной обработки, если не установлен
           if (style.apiParams && typeof style.apiParams === 'object') {
             const params = style.apiParams as Record<string, any>;
@@ -882,8 +842,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
         
-        // Добавляем к существующим стилям
-        allStyles = [...allStyles, ...magentaStyles];
+        allStyles = [...magentaStyles];
       } catch (magentaError) {
         console.error('Ошибка при загрузке стилей из Magenta:', magentaError);
       }
@@ -917,13 +876,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid style ID" });
       }
 
-      // Ищем стиль во всех доступных источниках
+      // Ищем стиль только в Magenta
       let style = null;
       
-      // 1. Сначала проверяем WISE стили
       try {
-        const wiseStyles = getAvailableWiseStyles();
-        const foundStyle = wiseStyles.find((s: any) => s.id === id);
+        const { getAvailableAiStyles } = await import('./magenta_styler');
+        const styles = getAvailableAiStyles();
+        const foundStyle = styles.find(s => s.id === id);
         
         if (foundStyle) {
           style = foundStyle;
@@ -931,36 +890,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (style.apiParams && typeof style.apiParams === 'object') {
             const params = style.apiParams as Record<string, any>;
             if (!params.transformType) {
-              params.transformType = "wise";
+              params.transformType = "magenta";
             }
           }
         }
-      } catch (wiseError) {
-        console.error('Ошибка при загрузке стиля из WISE:', wiseError);
+      } catch (magentaError) {
+        console.error('Ошибка при загрузке стиля из Magenta:', magentaError);
       }
       
-      // 2. Если стиль не найден, ищем в Magenta
-      if (!style) {
-        try {
-          const magentaStyles = getMagentaStyles();
-          const foundStyle = magentaStyles.find((s: any) => s.id === id);
-          
-          if (foundStyle) {
-            style = foundStyle;
-            // Устанавливаем transformType для правильной обработки, если не установлен
-            if (style.apiParams && typeof style.apiParams === 'object') {
-              const params = style.apiParams as Record<string, any>;
-              if (!params.transformType) {
-                params.transformType = "magenta";
-              }
-            }
-          }
-        } catch (magentaError) {
-          console.error('Ошибка при загрузке стиля из Magenta:', magentaError);
-        }
-      }
-      
-      // 3. Если стиль не найден ни в одном из источников, пробуем получить из хранилища
+      // 5. Если стиль не найден ни в одном из источников, пробуем получить из хранилища
       if (!style) {
         const storageStyle = await storage.getAiStyle(id);
         if (storageStyle) {
