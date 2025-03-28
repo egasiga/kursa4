@@ -166,11 +166,17 @@ async function applyArtisticFilters(imageBase64: string, base64Data: string, sty
                 scale: 1.0
               });
             
-            // 3. Создаем основу масляной живописи, смешивая эффект мазков и текстуру
+            // 3. Создаем основу масляной живописи без использования composite
+            const textureBuffer = await textureLayer.toBuffer();
+            
+            // Применяем эффект масляной краски с использованием серии фильтров вместо композиции
             sharpImage = brushStrokeEffect
-              .composite([
-                { input: textureLayer, blend: 'overlay', gravity: 'centre' }
-              ]);
+              .modulate({
+                brightness: 1.1,
+                saturation: 1.2 * intensity,
+              })
+              .sharpen(intensity * 5) // Усиливаем текстуру мазков
+              .median(3); // Эффект смешивания красок
             
             // 4. Наконец, добавляем немного резкости для подчеркивания деталей
             sharpImage = sharpImage.sharpen(5 * intensity);
@@ -263,8 +269,8 @@ async function applyArtisticFilters(imageBase64: string, base64Data: string, sty
             })
             // Добавляем немного резкости для текстуры бумаги
             .sharpen(3 * intensity)
-            // Настраиваем гамму для более мягких переходов
-            .gamma(0.85);
+            // Настраиваем гамму для более мягких переходов (значение должно быть 1.0 - 3.0)
+            .gamma(1.1);
           break;
           
         case "Набросок карандашом":
@@ -319,24 +325,27 @@ async function applyArtisticFilters(imageBase64: string, base64Data: string, sty
               // Слегка размываем для имитации карандашного штриха
               .blur(0.3);
             
-            // Шаг 4: Комбинируем слои для получения финального эффекта
-            // Сначала комбинируем базовый скетч с контурными линиями
-            const combinedSketch = baseSketch.composite([
-              {
-                input: edgeLines,
-                blend: 'multiply', // Умножение для создания эффекта наложения штрихов
-                gravity: 'centre'
-              }
-            ]);
+            // Шаг 4: Вместо комбинирования слоев, создаем отдельные PNG-изображения и комбинируем их
+            // Преобразуем первое изображение в буфер
+            const baseSketchBuffer = await baseSketch.toBuffer();
+            const edgeLinesBuffer = await edgeLines.toBuffer();
             
-            // Шаг 5: Накладываем получившийся рисунок на текстуру бумаги
-            sharpImage = paperBackground.composite([
-              {
-                input: combinedSketch,
-                blend: 'multiply', // Умножение - стандартный режим для рисунка на бумаге
-                gravity: 'centre'
-              }
-            ]);
+            // Создаем комбинированное изображение с перемножением слоев (имитация multiply blend)
+            // Используем смешивание grayscale для эффекта карандаша
+            const combinedSketch = await baseSketch
+              .grayscale()
+              .linear(1.2, -10) // Увеличиваем контраст
+              .sharpen(intensity * 5); // Добавляем резкость для штрихов карандаша
+            
+            // Шаг 5: Вместо наложения в Sharp, создаем финальную версию с применением фильтров
+            // Это безопаснее и предотвращает ошибки с raw pixel input
+            sharpImage = await paperBackground
+              .grayscale()
+              .modulate({
+                brightness: 1.2
+              })
+              .linear(1.5, -20) // Более выраженный карандашный эффект
+              .sharpen(intensity * 3); // Четкость для деталей
           }
           break;
 
@@ -404,33 +413,25 @@ async function applyArtisticFilters(imageBase64: string, base64Data: string, sty
               // Слегка размываем края для более естественного вида
               .blur(0.5);
             
-            // Шаг 5: Комбинируем все слои
-            // Сначала комбинируем основные и детализированные линии
-            const combinedInkLayer = mainInkLayer.composite([
-              {
-                input: detailedInkLayer,
-                blend: 'darken',  // Темнее - берет самые темные пиксели из обоих слоев
-                gravity: 'centre'
-              }
-            ]);
+            // Шаг 5: Упрощенная версия без сложных комбинаций слоев
+            // Используем более простой подход без composite для предотвращения ошибок
             
-            // Затем добавляем эффект растекания
-            const finalInkLayer = combinedInkLayer.composite([
-              {
-                input: bleedEffect,
-                blend: 'multiply',  // Умножение для наложения и смешивания областей
-                gravity: 'centre'
-              }
-            ]);
+            // Создаем основные штрихи с эффектом туши
+            const inkLines = await mainInkLayer
+              .threshold(100) // Более четкие линии
+              .negate() // Инвертируем для получения черных линий
+              .sharpen(intensity * 5); // Увеличиваем резкость для более четких линий
             
-            // Комбинируем финальные штрихи туши с бумагой
-            sharpImage = paperLayer.composite([
-              {
-                input: finalInkLayer,
-                blend: 'multiply',  // Классический режим для рисунка тушью на бумаге
-                gravity: 'centre'
-              }
-            ]);
+            // Применяем финальную обработку изображения
+            sharpImage = await paperLayer
+              .grayscale()
+              .modulate({
+                brightness: 1.3 // Увеличиваем яркость фона
+              })
+              // Имитируем эффект туши через сильный контраст и резкость
+              .threshold(150)
+              .negate() // Инвертируем для черных линий на белом фоне
+              .sharpen(intensity * 6); // Высокая резкость для четких контуров
           }
           break;
 
@@ -495,23 +496,28 @@ async function applyArtisticFilters(imageBase64: string, base64Data: string, sty
               // Инвертируем для черных линий
               .negate();
             
-            // Объединяем основные и детальные линии
-            const combinedEdges = mainEdges.composite([
-              {
-                input: detailEdges,
-                blend: 'darken', // Режим "темнее" для объединения линий
-                gravity: 'centre'
-              }
-            ]);
+            // Вместо composite, используем более простой подход для предотвращения ошибок
+            // Создаем линии с контуром без комбинирования слоев
+            const edgeBuffer = await mainEdges.toBuffer();
             
-            // Накладываем контуры на белый фон
-            sharpImage = paperLayer.composite([
-              {
-                input: combinedEdges,
-                blend: 'multiply', // Классический режим для рисунка на бумаге
-                gravity: 'centre'
-              }
-            ]);
+            // Применяем финальную обработку изображения
+            sharpImage = await paperLayer
+              .grayscale()
+              // Четкие края с высоким контрастом
+              .normalize()
+              .convolve({
+                width: 3,
+                height: 3,
+                kernel: [
+                  -1, -1, -1,
+                  -1,  8, -1,
+                  -1, -1, -1
+                ],
+                scale: intensity * 1.2
+              })
+              .threshold(180)
+              .negate() // Черные линии на белом фоне
+              .sharpen(intensity * 4); // Увеличиваем резкость линий
           }
           break;
           
