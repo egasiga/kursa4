@@ -152,128 +152,183 @@ async function applySharpFilters(imageBase64: string, base64Data: string, styleP
     
     // Получим информацию об изображении для сохранения пропорций
     const metadata = await sharpImage.metadata();
+    const width = metadata.width;
+    const height = metadata.height;
     
-    // Применяем эффекты в зависимости от выбранной AI модели
+    if (!width || !height) {
+      throw new Error("Не удалось получить размеры изображения");
+    }
+    
+    // Применяем эффекты в зависимости от выбранного стиля
     if (styleParams.aiModel) {
-      console.log(`Запуск модели Sharp: ${styleParams.aiModel}`);
+      console.log(`Применение стиля: ${styleParams.aiModel}`);
+      
+      // Интенсивность эффекта
+      const intensity = styleParams.styleIntensity || 1.0;
       
       switch (styleParams.aiModel) {
-        case "neural-style":
-          // Нейронный стиль - высокая контрастность, четкость
-          console.log(`Применение нейронной стилизации с интенсивностью: ${styleParams.styleIntensity}`);
+        case "Нейронное искусство":
+        case "Neural Art":
+          // Имитация нейронной стилизации: высокая контрастность, насыщенные цвета, четкость
           sharpImage = sharpImage
+            .convolve({
+              width: 3,
+              height: 3,
+              kernel: [-1, -1, -1, -1, 8, -1, -1, -1, -1]
+            })
             .modulate({
               brightness: 1.2, 
-              saturation: 1.5
+              saturation: 1.5 * intensity
             })
-            .sharpen(styleParams.styleIntensity * 20 || 15);
+            .sharpen(10 * intensity);
           break;
           
-        case "anime-gan":
-          // Аниме стиль - увеличение яркости, насыщенности цветов
-          console.log(`Применение анимизации с интенсивностью: ${styleParams.styleIntensity}`);
+        case "Аниме":
+        case "Anime":
+          // Аниме стиль: яркие цвета, сглаженные края
           sharpImage = sharpImage
             .modulate({
               brightness: 1.1, 
-              saturation: 1.4, 
+              saturation: 1.4 * intensity, 
               hue: 5
             })
-            .median(3); // Сглаживание для эффекта "рисованности"
+            .median(3)  // Сглаживание для эффекта "рисованности"
+            .sharpen(5 * intensity);
           break;
           
-        case "style-transfer":
-          // Перенос стиля - используем эффекты в зависимости от styleReference
-          console.log(`Перенос стиля: ${styleParams.styleReference} для типа: ${styleParams.transformType}`);
-          
-          // Применяем разные эффекты в зависимости от запрошенного стиля
-          if (styleParams.styleReference === 'pop-art') {
-            sharpImage = sharpImage
-              .modulate({
-                brightness: 1.2, 
-                saturation: 2.0, 
-                hue: 90
-              })
-              .threshold(150);
-          } else if (styleParams.styleReference === 'impressionism') {
-            sharpImage = sharpImage
-              .modulate({
-                brightness: 1.1, 
-                saturation: 1.3
-              })
-              .blur(2);
-          } else if (styleParams.styleReference === 'cubism') {
-            // Кубизм с сильным контрастом и необычными цветами
-            sharpImage = sharpImage
-              .modulate({
-                brightness: 1.1, 
-                saturation: 0.8, 
-                hue: 180
-              })
-              .sharpen(20)
-              .negate({ alpha: false });
-          }
+        case "Поп-арт":
+        case "Pop Art":
+          // Яркие, контрастные цвета в стиле поп-арт
+          sharpImage = sharpImage
+            .modulate({
+              brightness: 1.2, 
+              saturation: 2.0 * intensity, 
+              hue: 90 * intensity
+            })
+            .threshold(150);
           break;
           
-        case "pixel-transformer":
-          // Пиксельная графика - уменьшаем разрешение и увеличиваем обратно
-          console.log(`Пикселизация с размером пикселя: ${styleParams.pixelSize || 8}`);
-          const pixelSize = styleParams.pixelSize || 8;
-          
-          const width = metadata.width;
-          const height = metadata.height;
-          
-          if (width && height) {
-            // Уменьшаем до маленького размера и затем увеличиваем обратно без сглаживания
-            sharpImage = sharpImage
-              .resize(Math.floor(width / pixelSize), Math.floor(height / pixelSize), {
-                kernel: 'nearest'
-              })
-              .resize(width, height, {
-                kernel: 'nearest'
-              });
-          }
-          break;
-          
-        case "cartoonizer":
-          // Карикатурный стиль с повышенной контрастностью
-          console.log(`Преобразование в карикатуру с уровнем преувеличения: ${styleParams.exaggeration || 1.5}`);
+        case "Импрессионизм":
+        case "Impressionism":
+          // Мягкие края, пастельные тона
           sharpImage = sharpImage
             .modulate({
               brightness: 1.1, 
-              saturation: 1.5
+              saturation: 1.3 * intensity
             })
-            .sharpen(25)
-            .median(3); // Эффект сглаживания "рисунка"
+            .blur(2 * intensity)
+            .sharpen(3 * intensity);
           break;
           
-        case "comic-transformer":
+        case "Масляная живопись":
+        case "Oil Painting":
+          // Эффект масляной живописи: текстура мазков
+          // Используем несколько проходов размытия и повышения резкости
+          sharpImage = sharpImage
+            .blur(1 * intensity)
+            .sharpen(10 * intensity)
+            .median(2)
+            .modulate({
+              brightness: 1.05, 
+              saturation: 1.2 * intensity
+            });
+          break;
+          
+        case "Пиксель-арт":
+        case "Pixel Art":
+          // Пиксельная графика - уменьшаем разрешение и увеличиваем обратно
+          const pixelSize = Math.max(2, Math.floor(8 * intensity));
+          
+          // Уменьшаем и масштабируем без сглаживания
+          sharpImage = sharpImage
+            .resize(Math.floor(width / pixelSize), Math.floor(height / pixelSize), {
+              kernel: 'nearest'
+            })
+            .resize(width, height, {
+              kernel: 'nearest'
+            });
+          break;
+          
+        case "Карикатура":
+        case "Cartoon":
+          // Карикатурный стиль с повышенной контрастностью и выделенными краями
+          sharpImage = sharpImage
+            .modulate({
+              brightness: 1.1, 
+              saturation: 1.5 * intensity
+            })
+            .sharpen(15 * intensity)
+            .median(3);
+          break;
+          
+        case "Комикс":
+        case "Comic":
           // Комикс стиль - оконтуривание и яркие цвета
-          console.log(`Преобразование в стиль комикса с эффектом чернил: ${styleParams.inkEffect || 'high'}`);
           sharpImage = sharpImage
-            .sharpen(30)
+            .sharpen(20 * intensity)
             .modulate({
               brightness: 1.2, 
-              saturation: 1.5
+              saturation: 1.5 * intensity
             })
-            .threshold(110); // Для эффекта "чернил"
+            .threshold(110);
           break;
           
-        case "future-vision":
-          // Футуристический стиль с неоновыми эффектами
-          console.log(`Применение футуристического стиля с неоновым эффектом: ${styleParams.neonEffect || 'high'}`);
+        case "Неон":
+        case "Neon":
+          // Неоновый эффект с яркими контрастными цветами
           sharpImage = sharpImage
             .modulate({
               brightness: 1.2, 
-              saturation: 1.7, 
-              hue: 240 // Голубой оттенок
+              saturation: 1.7 * intensity, 
+              hue: 240 * intensity  // Голубой/пурпурный оттенок
             })
-            .sharpen(20)
-            .negate({ alpha: false }) // Инвертируем цвета для неонового эффекта
-            .normalize(); // Нормализуем результат
+            .sharpen(15 * intensity)
+            .negate({ alpha: false })  // Инвертируем цвета для неонового эффекта
+            .normalize();  // Нормализуем результат
+          break;
+          
+        case "Винтаж":
+        case "Vintage":
+          // Эффект старой фотографии
+          sharpImage = sharpImage
+            .modulate({
+              brightness: 0.9,
+              saturation: 0.7 * intensity,
+              hue: 30  // Смещение тона в сторону сепии
+            })
+            .gamma(1.2)
+            .blur(0.5 * intensity);
+          break;
+          
+        case "Акварель":
+        case "Watercolor":
+          // Эффект акварели: мягкие края, светлые тона
+          sharpImage = sharpImage
+            .modulate({
+              brightness: 1.1,
+              saturation: 1.1 * intensity
+            })
+            .blur(1.5 * intensity)
+            .sharpen(5 * intensity);
+          break;
+          
+        case "Контурный рисунок":
+        case "Line Drawing":
+          // Выделение краев и контуров
+          sharpImage = sharpImage
+            .grayscale()  // Сначала преобразуем в оттенки серого
+            .modulate({ brightness: 1.5 })  // Повышаем яркость
+            .convolve({  // Применяем ядро свертки для выделения краев
+              width: 3,
+              height: 3,
+              kernel: [-1, -1, -1, -1, 8, -1, -1, -1, -1]
+            })
+            .negate()  // Инвертируем для получения черных линий на белом фоне
+            .threshold(120);  // Делаем контрастнее
           break;
           
         default:
-          console.log("Неизвестная AI модель, применение базовой трансформации");
+          console.log("Неизвестный стиль, применение базовой трансформации");
           sharpImage = sharpImage
             .modulate({
               brightness: 1.1, 

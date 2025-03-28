@@ -80,8 +80,7 @@ export class MemStorage implements IStorage {
         description: "Преобразуйте ваше изображение в стиле нейронных сетей",
         previewUrl: "/api/styles/preview/neural",
         apiParams: { 
-          aiModel: "neural-style",
-          transformType: "artistic",
+          aiModel: "Нейронное искусство",
           styleIntensity: 0.8
         }
       },
@@ -90,8 +89,7 @@ export class MemStorage implements IStorage {
         description: "Преобразуйте ваше изображение в стиле аниме",
         previewUrl: "/api/styles/preview/anime",
         apiParams: { 
-          aiModel: "anime-gan",
-          transformType: "character",
+          aiModel: "Аниме",
           styleIntensity: 0.9
         }
       },
@@ -100,19 +98,17 @@ export class MemStorage implements IStorage {
         description: "Преобразуйте изображение в стиле масляной живописи",
         previewUrl: "/api/styles/preview/oil-painting",
         apiParams: { 
-          aiModel: "style-transfer",
-          transformType: "painting",
-          styleReference: "impressionism"
+          aiModel: "Масляная живопись",
+          styleIntensity: 1.0
         }
       },
       {
-        name: "Кубизм",
-        description: "Преобразуйте изображение в стиле кубизма",
-        previewUrl: "/api/styles/preview/cubism",
+        name: "Импрессионизм",
+        description: "Преобразуйте изображение в стиле импрессионизма",
+        previewUrl: "/api/styles/preview/impressionism",
         apiParams: { 
-          aiModel: "style-transfer",
-          transformType: "artistic",
-          styleReference: "cubism"
+          aiModel: "Импрессионизм",
+          styleIntensity: 0.9
         }
       },
       {
@@ -120,9 +116,8 @@ export class MemStorage implements IStorage {
         description: "Преобразуйте изображение в стиле пиксельной графики",
         previewUrl: "/api/styles/preview/pixel-art",
         apiParams: { 
-          aiModel: "pixel-transformer",
-          transformType: "retro",
-          pixelSize: 8
+          aiModel: "Пиксель-арт",
+          styleIntensity: 1.0
         }
       },
       {
@@ -130,9 +125,8 @@ export class MemStorage implements IStorage {
         description: "Преобразуйте изображение в стиле поп-арт",
         previewUrl: "/api/styles/preview/pop-art",
         apiParams: { 
-          aiModel: "style-transfer",
-          transformType: "artistic",
-          styleReference: "pop-art"
+          aiModel: "Поп-арт",
+          styleIntensity: 1.0
         }
       },
       {
@@ -140,9 +134,8 @@ export class MemStorage implements IStorage {
         description: "Преобразуйте ваше изображение в стиле карикатуры",
         previewUrl: "/api/styles/preview/cartoon",
         apiParams: { 
-          aiModel: "cartoonizer",
-          transformType: "character",
-          exaggeration: 0.7
+          aiModel: "Карикатура",
+          styleIntensity: 0.7
         }
       },
       {
@@ -150,29 +143,44 @@ export class MemStorage implements IStorage {
         description: "Преобразуйте ваше изображение в стиле комикса",
         previewUrl: "/api/styles/preview/comic",
         apiParams: { 
-          aiModel: "comic-transformer",
-          transformType: "print", 
-          inkEffect: "high"
+          aiModel: "Комикс",
+          styleIntensity: 0.8
         }
       },
       {
-        name: "Нуар",
-        description: "Преобразуйте изображение в стиле нуар",
-        previewUrl: "/api/styles/preview/noir",
+        name: "Винтаж",
+        description: "Преобразуйте изображение в стиле старой фотографии",
+        previewUrl: "/api/styles/preview/vintage",
         apiParams: { 
-          aiModel: "style-transfer",
-          transformType: "film",
-          styleReference: "noir"
+          aiModel: "Винтаж",
+          styleIntensity: 0.7
         }
       },
       {
-        name: "Киберпанк",
-        description: "Преобразуйте изображение в стиле киберпанк",
-        previewUrl: "/api/styles/preview/cyberpunk",
+        name: "Неон",
+        description: "Преобразуйте изображение в неоновом стиле",
+        previewUrl: "/api/styles/preview/neon",
         apiParams: { 
-          aiModel: "future-vision",
-          transformType: "sci-fi", 
-          neonEffect: "high"
+          aiModel: "Неон",
+          styleIntensity: 0.8
+        }
+      },
+      {
+        name: "Акварель",
+        description: "Преобразуйте изображение в стиле акварельной живописи",
+        previewUrl: "/api/styles/preview/watercolor",
+        apiParams: { 
+          aiModel: "Акварель",
+          styleIntensity: 0.8
+        }
+      },
+      {
+        name: "Контурный рисунок",
+        description: "Преобразуйте изображение в контурный рисунок",
+        previewUrl: "/api/styles/preview/line-drawing",
+        apiParams: { 
+          aiModel: "Контурный рисунок",
+          styleIntensity: 0.8
         }
       }
     ];

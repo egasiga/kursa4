@@ -73,8 +73,8 @@ export default function MemeGenerator() {
 
   // Apply AI style mutation
   const applyStyleMutation = useMutation({
-    mutationFn: async ({ imageData, styleId }: { imageData: string; styleId: string }) => {
-      const response = await apiRequest("POST", "/api/apply-style", { imageData, styleId });
+    mutationFn: async ({ image, styleParams }: { image: string; styleParams: any }) => {
+      const response = await apiRequest("POST", "/api/apply-style", { image, styleParams });
       return response.json();
     },
     onSuccess: (data) => {
@@ -216,11 +216,43 @@ export default function MemeGenerator() {
     });
   };
 
-  const handleApplyAiStyle = () => {
+  const handleApplyAiStyle = async () => {
     if (!canvasRef || selectedAiStyle === "none") return;
     
-    const imageData = canvasRef.toDataURL("image/png");
-    applyStyleMutation.mutate({ imageData, styleId: selectedAiStyle });
+    // Получаем выбранный стиль из списка доступных стилей
+    const selectedStyle = aiStyles?.find(style => String(style.id) === selectedAiStyle);
+    if (!selectedStyle) {
+      toast({
+        title: "Стиль не найден",
+        description: "Выбранный стиль AI не найден в списке доступных стилей.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Получаем изображение из канваса
+    const image = canvasRef.toDataURL("image/png");
+    
+    // Определяем параметры стиля на основе его типа
+    const styleParams = {
+      aiModel: selectedStyle.name,
+      styleIntensity: 1.0,
+      transformType: "image-to-image",
+      styleReference: selectedStyle.description || "general",
+      ...selectedStyle.apiParams
+    };
+    
+    console.log("Applying style:", {
+      styleId: selectedAiStyle,
+      styleName: selectedStyle.name,
+      styleParams
+    });
+    
+    // Вызываем мутацию с правильными параметрами
+    applyStyleMutation.mutate({ 
+      image, 
+      styleParams 
+    });
   };
 
   const handleSaveMeme = () => {
