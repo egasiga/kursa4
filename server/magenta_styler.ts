@@ -410,10 +410,11 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Масляная живопись",
-        styleIntensity: 1.0,
+        styleIntensity: 0.65,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в стиле масляной живописи с выразительными мазками и насыщенными цветами"
-      }
+      },
+      source: "magenta"
     },
     {
       id: 2,
@@ -422,10 +423,11 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Акварель",
-        styleIntensity: 1.0,
+        styleIntensity: 0.65,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в нежный акварельный стиль с прозрачными красками и мягкими переходами"
-      }
+      },
+      source: "magenta"
     },
     {
       id: 3,
@@ -434,10 +436,11 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Набросок карандашом",
-        styleIntensity: 1.0,
+        styleIntensity: 0.65,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в детализированный карандашный набросок с тонкими линиями и тенями"
-      }
+      },
+      source: "magenta"
     },
     {
       id: 4,
@@ -446,10 +449,11 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Пиксель-арт",
-        styleIntensity: 1.0,
+        styleIntensity: 0.65,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в стиль пиксельной графики с ограниченной цветовой палитрой"
-      }
+      },
+      source: "magenta"
     },
     {
       id: 5,
@@ -458,10 +462,11 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Аниме",
-        styleIntensity: 1.0,
+        styleIntensity: 0.65,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в аниме-стиль с характерными чертами японской анимации"
-      }
+      },
+      source: "magenta"
     },
     {
       id: 6,
@@ -470,10 +475,11 @@ export function getAvailableAiStyles(): AiStyle[] {
       previewUrl: null,
       apiParams: {
         aiModel: "Ван Гог",
-        styleIntensity: 1.0,
+        styleIntensity: 0.65,
         transformType: "magenta",
         styleReference: "Преобразуйте изображение в стиле художника Винсента Ван Гога с характерными завихрениями и яркими цветами"
-      }
+      },
+      source: "magenta"
     }
   ];
 }

@@ -67,12 +67,30 @@ def main():
     
     print("Применение стиля...")
     start_time = time.time()
+    
+    # Вычисляем стилизованное изображение
     outputs = hub_module(tf.constant(content_image), tf.constant(style_image))
     stylized_image = outputs[0]
+    
+    # Уменьшаем интенсивность стилизации, смешивая с оригинальным изображением
+    # Это позволяет сохранить больше деталей из оригинала, при этом применяя
+    # художественные элементы из стилизованного изображения
+    # 
+    # Используем значение 0.65 (снижение интенсивности на 35%)
+    # При таком значении изображения остаются хорошо узнаваемыми,
+    # но при этом имеют достаточную степень стилизации
+    # 
+    # Чем ближе blend_factor к 1, тем больше оригинала сохраняется
+    blend_factor = 0.65  
+    
+    # Линейная интерполяция между оригинальным и стилизованным изображением
+    # content_image * blend_factor + stylized_image * (1 - blend_factor)
+    blended_image = blend_factor * content_image + (1 - blend_factor) * stylized_image
+    
     elapsed_time = time.time() - start_time
     print(f"Стилизация выполнена за {elapsed_time:.2f} секунд")
     
-    save_image(stylized_image, output_image_path)
+    save_image(blended_image, output_image_path)
     
     # Очистка временных файлов
     try:

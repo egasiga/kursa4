@@ -74,6 +74,7 @@ export const aiStyles = pgTable("ai_styles", {
   description: text("description"),
   previewUrl: text("preview_url"),
   apiParams: json("api_params").default({}), // Parameters to send to AI API
+  source: text("source").default("magenta"), // Source of the style (e.g., "magenta", "sharp", "huggingface")
 });
 
 export const insertAiStyleSchema = createInsertSchema(aiStyles).omit({
