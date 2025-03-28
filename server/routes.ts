@@ -10,6 +10,10 @@ import fetch from "node-fetch";
 // для настоящей AI-стилизации изображений
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { writeFile, readFile, unlink } from 'fs/promises';
+import { mkdtempSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import sharp from 'sharp';
 
 // Преобразуем exec в промис для удобства использования
@@ -27,17 +31,49 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
       console.log("Найден ключ OpenAI API, используем настоящий AI для обработки");
       
       try {
-        // Запускаем Python-скрипт для обработки изображения через OpenAI API
-        const styleParamsJson = JSON.stringify(styleParams);
+        // Используем новый модуль для обработки изображений через OpenAI API
+        const { exec } = require('child_process');
+        const { promisify } = require('util');
+        const execPromise = promisify(exec);
         
-        // Подготавливаем команду для запуска Python-скрипта
-        // Передаем изображение и параметры стиля в качестве аргументов
-        const pythonCommand = `python server/ai_processor.py "${base64Data}" '${styleParamsJson}'`;
+        // Создаем временную директорию для передачи данных
+        const tempDir = mkdtempSync(join(tmpdir(), 'ai-meme-'));
+        const imageFilePath = join(tempDir, 'image.txt');
+        const styleParamsFilePath = join(tempDir, 'style-params.json');
         
-        console.log("Запуск Python-скрипта для обработки изображения...");
+        // Записываем base64 изображения и параметры стиля во временные файлы
+        await writeFile(imageFilePath, base64Data);
+        await writeFile(styleParamsFilePath, JSON.stringify(styleParams));
         
-        // Устанавливаем таймаут в 30 секунд, так как запросы к OpenAI API могут занимать время
+        // Запускаем Python-скрипт для обработки с использованием нашего нового модуля
+        const pythonCommand = `python -c "
+import json
+import sys
+from server.openai_utils import process_image_with_openai
+
+# Загружаем изображение из файла
+with open('${imageFilePath}', 'r') as f:
+    image_base64 = f.read()
+
+# Загружаем параметры из файла
+with open('${styleParamsFilePath}', 'r') as f:
+    style_params = json.load(f)
+
+# Обрабатываем изображение
+result = process_image_with_openai(image_base64, style_params)
+print(result)
+"`;
+        
+        console.log("Запуск Python-скрипта для обработки изображения через OpenAI API...");
+        
+        // Устанавливаем таймаут в 30 секунд
         const { stdout, stderr } = await execPromise(pythonCommand, { timeout: 30000 });
+        
+        // Удаляем временные файлы
+        await Promise.all([
+          unlink(imageFilePath).catch(() => {}),
+          unlink(styleParamsFilePath).catch(() => {})
+        ]);
         
         if (stderr) {
           console.error("Ошибка при выполнении Python-скрипта:", stderr);

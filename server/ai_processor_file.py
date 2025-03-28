@@ -24,12 +24,12 @@ def generate_headers():
         "Authorization": f"Bearer {OPENAI_API_KEY}"
     }
 
-def process_image_with_openai(image_data: str, style_params: Dict[Any, Any]) -> str:
+def process_image_with_openai(image_path: str, style_params: Dict[Any, Any]) -> str:
     """
     Обрабатывает изображение с помощью OpenAI API.
     
     Args:
-        image_data: строка в формате base64 (без префикса)
+        image_path: путь к файлу с изображением в формате base64
         style_params: параметры стиля для применения
     
     Returns:
@@ -40,6 +40,10 @@ def process_image_with_openai(image_data: str, style_params: Dict[Any, Any]) -> 
         ai_model = style_params.get("aiModel", "")
         transform_type = style_params.get("transformType", "")
         style_reference = style_params.get("styleReference", "")
+        
+        # Загружаем изображение из файла
+        with open(image_path, 'r') as f:
+            image_data = f.read()
         
         # Декодируем изображение из base64
         image_binary = base64.b64decode(image_data)
@@ -63,12 +67,16 @@ def process_image_with_openai(image_data: str, style_params: Dict[Any, Any]) -> 
                 return result_image_data
         
         # Если что-то пошло не так, возвращаем исходное изображение
-        return image_data
+        with open(image_path, 'r') as f:
+            original_image_data = f.read()
+        return original_image_data
         
     except Exception as e:
         print(f"Ошибка при обработке изображения: {str(e)}", file=sys.stderr)
         # В случае ошибки возвращаем исходное изображение
-        return image_data
+        with open(image_path, 'r') as f:
+            original_image_data = f.read()
+        return original_image_data
 
 def generate_style_description(ai_model: str, transform_type: str, style_reference: str, style_params: Dict[Any, Any]) -> str:
     """
@@ -194,14 +202,18 @@ def call_openai_api(image: Image.Image, prompt: str) -> Dict[Any, Any]:
 
 # Если скрипт запущен как основной, принимаем аргументы из командной строки
 if __name__ == "__main__":
-    # Ожидаем два аргумента: base64 изображения и JSON с параметрами стиля
+    # Ожидаем два аргумента: путь к файлу с base64 изображением и путь к файлу с JSON параметрами стиля
     if len(sys.argv) != 3:
-        print("Использование: python ai_processor.py <base64_image> <style_params_json>", file=sys.stderr)
+        print("Использование: python ai_processor_file.py <image_file> <style_params_file>", file=sys.stderr)
         sys.exit(1)
         
-    image_data = sys.argv[1]
-    style_params = json.loads(sys.argv[2])
+    image_path = sys.argv[1]
+    style_params_path = sys.argv[2]
+    
+    # Загружаем параметры стиля из файла
+    with open(style_params_path, 'r') as f:
+        style_params = json.load(f)
     
     # Обрабатываем изображение и выводим результат
-    result = process_image_with_openai(image_data, style_params)
+    result = process_image_with_openai(image_path, style_params)
     print(result)
