@@ -1,8 +1,8 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertMemeTemplateSchema, insertSavedMemeSchema, insertCollageSchema } from "@shared/schema";
+import { insertMemeTemplateSchema, insertSavedMemeSchema, insertCollageSchema, insertAiStyleSchema } from "@shared/schema";
 import fetch from "node-fetch";
 
 // Функция для применения AI-стилей к изображениям
@@ -31,67 +31,119 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
       console.log("Найден ключ OpenAI API, используем настоящий AI для обработки");
       
       try {
-        // Используем новый модуль для обработки изображений через OpenAI API
-        const { exec } = require('child_process');
-        const { promisify } = require('util');
-        const execPromise = promisify(exec);
-        
         // Создаем временную директорию для передачи данных
         const tempDir = mkdtempSync(join(tmpdir(), 'ai-meme-'));
         const imageFilePath = join(tempDir, 'image.txt');
         const styleParamsFilePath = join(tempDir, 'style-params.json');
+        const resultFilePath = join(tempDir, 'result.txt');
         
         // Записываем base64 изображения и параметры стиля во временные файлы
         await writeFile(imageFilePath, base64Data);
         await writeFile(styleParamsFilePath, JSON.stringify(styleParams));
         
-        // Запускаем Python-скрипт для обработки с использованием нашего нового модуля
-        const pythonCommand = `python -c "
+        // Создаем простой Python-скрипт для запуска
+        const scriptPath = join(tempDir, 'run_ai.py');
+        const scriptContent = `
 import json
 import sys
+import os
 from server.openai_utils import process_image_with_openai
 
+# Пути к файлам из аргументов командной строки
+image_path = sys.argv[1]
+params_path = sys.argv[2]
+result_path = sys.argv[3]
+
 # Загружаем изображение из файла
-with open('${imageFilePath}', 'r') as f:
+with open(image_path, 'r') as f:
     image_base64 = f.read()
 
 # Загружаем параметры из файла
-with open('${styleParamsFilePath}', 'r') as f:
+with open(params_path, 'r') as f:
     style_params = json.load(f)
 
 # Обрабатываем изображение
 result = process_image_with_openai(image_base64, style_params)
-print(result)
-"`;
+
+# Записываем результат в файл
+with open(result_path, 'w') as f:
+    f.write(result)
+`;
+        await writeFile(scriptPath, scriptContent);
         
+        // Запускаем отдельный Python-скрипт для обработки
         console.log("Запуск Python-скрипта для обработки изображения через OpenAI API...");
+        const { spawn } = await import('child_process');
         
-        // Устанавливаем таймаут в 30 секунд
-        const { stdout, stderr } = await execPromise(pythonCommand, { timeout: 30000 });
-        
-        // Удаляем временные файлы
-        await Promise.all([
-          unlink(imageFilePath).catch(() => {}),
-          unlink(styleParamsFilePath).catch(() => {})
-        ]);
-        
-        if (stderr) {
-          console.error("Ошибка при выполнении Python-скрипта:", stderr);
-        }
-        
-        if (stdout) {
-          console.log("Обработка изображения AI успешно завершена");
-          return 'data:image/png;base64,' + stdout.trim();
-        }
+        return new Promise((resolve, reject) => {
+          const pythonProcess = spawn('python', [
+            scriptPath, 
+            imageFilePath, 
+            styleParamsFilePath, 
+            resultFilePath
+          ]);
+          
+          let errorOutput = '';
+          
+          pythonProcess.stderr.on('data', (data) => {
+            errorOutput += data.toString();
+            console.error(`Python error: ${data}`);
+          });
+          
+          pythonProcess.on('close', async (code) => {
+            try {
+              if (code !== 0) {
+                console.error(`Python process exited with code ${code}`);
+                console.error(`Error: ${errorOutput}`);
+                throw new Error(`Python process failed with exit code ${code}: ${errorOutput}`);
+              }
+              
+              // Проверяем, был ли создан файл с результатом
+              try {
+                const result = await readFile(resultFilePath, 'utf8');
+                console.log("Обработка изображения AI успешно завершена");
+                
+                // Очистка временных файлов
+                await Promise.all([
+                  unlink(imageFilePath).catch(() => {}),
+                  unlink(styleParamsFilePath).catch(() => {}),
+                  unlink(scriptPath).catch(() => {}),
+                  unlink(resultFilePath).catch(() => {})
+                ]);
+                
+                resolve('data:image/png;base64,' + result.trim());
+              } catch (readError) {
+                console.error("Ошибка при чтении результата:", readError);
+                throw readError;
+              }
+            } catch (error) {
+              console.error("Ошибка при обработке изображения Python-скриптом:", error);
+              console.log("Используем запасной вариант с Sharp для обработки изображения");
+              // Продолжаем выполнение с Sharp
+              resolve(applySharpFilters(imageBase64, base64Data, styleParams));
+            }
+          });
+        });
       } catch (pythonError) {
         console.error("Ошибка при обработке изображения Python-скриптом:", pythonError);
         console.log("Используем запасной вариант с Sharp для обработки изображения");
+        return applySharpFilters(imageBase64, base64Data, styleParams);
       }
     } else {
       console.log("API ключ OpenAI не найден, используем локальную обработку с Sharp");
+      return applySharpFilters(imageBase64, base64Data, styleParams);
     }
-    
-    // Запасной вариант: если OpenAI API недоступен, используем Sharp
+  } catch (error) {
+    console.error('Ошибка при применении AI-стиля:', error);
+    console.error((error as Error).stack);
+    // В случае ошибки возвращаем исходное изображение
+    return imageBase64;
+  }
+}
+
+// Отдельная функция для применения фильтров Sharp как запасной вариант
+async function applySharpFilters(imageBase64: string, base64Data: string, styleParams: any): Promise<string> {
+  try {
     // Преобразуем строку base64 в буфер
     const imageBuffer = Buffer.from(base64Data, 'base64');
     
@@ -238,17 +290,14 @@ print(result)
     
     return processedBase64;
   } catch (error) {
-    console.error('Ошибка при применении AI-стиля:', error);
-    console.error((error as Error).stack);
-    // В случае ошибки возвращаем исходное изображение
+    console.error('Ошибка при применении фильтров Sharp:', error);
     return imageBase64;
   }
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
-  const apiRouter = app.route("/api");
-
+  
   // Meme Templates
   app.get("/api/templates", async (req: Request, res: Response) => {
     try {
@@ -505,7 +554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const styles = await storage.getAiStyles();
       res.json(styles);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch AI styles", error: String(error) });
+      res.status(500).json({ message: "Failed to fetch styles", error: String(error) });
     }
   });
 
@@ -518,38 +567,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const style = await storage.getAiStyle(id);
       if (!style) {
-        return res.status(404).json({ message: "AI style not found" });
+        return res.status(404).json({ message: "Style not found" });
       }
 
       res.json(style);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch AI style", error: String(error) });
+      res.status(500).json({ message: "Failed to fetch style", error: String(error) });
     }
   });
 
   // Apply AI style to an image
   app.post("/api/apply-style", async (req: Request, res: Response) => {
     try {
-      const { imageData, styleId } = req.body;
+      const { image, styleParams } = req.body;
       
-      if (!imageData || !styleId) {
-        return res.status(400).json({ message: "Image data and style ID are required" });
+      if (!image || !styleParams) {
+        return res.status(400).json({ message: "Missing image or style parameters" });
       }
-
-      const style = await storage.getAiStyle(parseInt(styleId));
-      if (!style) {
-        return res.status(404).json({ message: "AI style not found" });
-      }
-
-      // Apply AI style transformation
-      const styledImage = await applyAiStyle(imageData, style.apiParams);
+      
+      // Применяем AI-стиль к изображению
+      const styledImage = await applyAiStyle(image, styleParams);
       
       res.json({ styledImage });
     } catch (error) {
-      res.status(500).json({ message: "Failed to apply AI style", error: String(error) });
+      console.error("Error applying style:", error);
+      res.status(500).json({ 
+        message: "Failed to apply style", 
+        error: String(error) 
+      });
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  return createServer(app);
 }
