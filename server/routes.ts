@@ -20,7 +20,7 @@ import sharp from 'sharp';
 const execPromise = promisify(exec);
 
 /**
- * Применяет художественный стиль к изображению с использованием библиотеки Sharp
+ * Применяет художественный стиль к изображению с использованием OpenAI API
  * @param imageBase64 - изображение в формате base64 с префиксом data:image/...;base64,
  * @param styleParams - параметры стиля
  * @returns обработанное изображение в формате base64
@@ -29,13 +29,23 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
   try {
     console.log("Применение художественного стиля:", styleParams);
     
-    // Убираем префикс data:image/...;base64, из строки base64
-    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-    
-    // Применяем художественные фильтры с помощью Sharp
-    const styledImage = await applyArtisticFilters(imageBase64, base64Data, styleParams);
-    
-    return styledImage;
+    // Попробуем применить стиль с использованием OpenAI API
+    try {
+      // Импортируем функцию для обработки изображения с помощью AI
+      const { aiStyleImage } = await import('./ai_styler');
+      
+      // Используем OpenAI для стилизации
+      const styledImage = await aiStyleImage(imageBase64, styleParams);
+      console.log("Успешное применение стиля через OpenAI");
+      return styledImage;
+    } catch (aiError) {
+      console.error('Ошибка при применении стиля через OpenAI, переключаемся на локальные фильтры:', aiError);
+      
+      // В случае ошибки с OpenAI, используем локальную обработку через Sharp
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+      const styledImage = await applyArtisticFilters(imageBase64, base64Data, styleParams);
+      return styledImage;
+    }
   } catch (error) {
     console.error('Ошибка при применении художественного стиля:', error);
     console.error((error as Error).stack);
@@ -823,8 +833,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Styles
   app.get("/api/styles", async (req: Request, res: Response) => {
     try {
-      const styles = await storage.getAiStyles();
-      res.json(styles);
+      // Импортируем функцию, возвращающую доступные AI стили из нового модуля
+      try {
+        const { getAvailableAiStyles } = await import('./ai_styler');
+        const styles = getAvailableAiStyles();
+        res.json(styles);
+      } catch (aiError) {
+        console.error('Ошибка при загрузке AI стилей из нового модуля:', aiError);
+        // Резервный вариант - загружаем из хранилища
+        const styles = await storage.getAiStyles();
+        res.json(styles);
+      }
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch styles", error: String(error) });
     }
@@ -837,12 +856,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid style ID" });
       }
 
-      const style = await storage.getAiStyle(id);
-      if (!style) {
-        return res.status(404).json({ message: "Style not found" });
+      try {
+        // Попробуем получить из нового модуля
+        const { getAvailableAiStyles } = await import('./ai_styler');
+        const styles = getAvailableAiStyles();
+        const style = styles.find(s => s.id === id);
+        
+        if (style) {
+          return res.json(style);
+        } else {
+          // Если стиль не найден в новом модуле, попробуем получить из хранилища
+          const storageStyle = await storage.getAiStyle(id);
+          if (!storageStyle) {
+            return res.status(404).json({ message: "Style not found" });
+          }
+          
+          return res.json(storageStyle);
+        }
+      } catch (aiError) {
+        console.error('Ошибка при загрузке стиля из нового модуля:', aiError);
+        
+        // Резервный вариант - загружаем из хранилища
+        const style = await storage.getAiStyle(id);
+        if (!style) {
+          return res.status(404).json({ message: "Style not found" });
+        }
+        
+        return res.json(style);
       }
-
-      res.json(style);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch style", error: String(error) });
     }
