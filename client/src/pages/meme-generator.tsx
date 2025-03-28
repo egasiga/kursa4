@@ -150,6 +150,8 @@ export default function MemeGenerator() {
             strokeColor: "#000000",
             strokeWidth: 2,
             align: "center",
+            offsetX: 0,
+            offsetY: 0,
           },
         });
       }
@@ -169,6 +171,26 @@ export default function MemeGenerator() {
           style: {
             ...newContent[existingIndex].style,
             [styleKey]: value,
+          },
+        };
+      }
+      
+      return newContent;
+    });
+  };
+  
+  const handleTextPositionChange = (areaIndex: number, offsetX: number, offsetY: number) => {
+    setTextContent((prevContent) => {
+      const newContent = [...prevContent];
+      const existingIndex = newContent.findIndex((item) => item.areaIndex === areaIndex);
+      
+      if (existingIndex >= 0) {
+        newContent[existingIndex] = {
+          ...newContent[existingIndex],
+          style: {
+            ...newContent[existingIndex].style,
+            offsetX,
+            offsetY,
           },
         };
       }
@@ -200,18 +222,22 @@ export default function MemeGenerator() {
       // Draw text stroke
       ctx.lineWidth = item.style.strokeWidth;
       ctx.strokeStyle = item.style.strokeColor;
+      // Вычисляем позицию текста с учетом смещения
+      const xPos = textArea.x + textArea.width / 2 + (item.style.offsetX || 0);
+      const yPos = textArea.y + textArea.height / 2 + (item.style.offsetY || 0);
+      
       ctx.strokeText(
         item.text,
-        textArea.x + textArea.width / 2,
-        textArea.y + textArea.height / 2
+        xPos,
+        yPos
       );
       
       // Draw text fill
       ctx.fillStyle = item.style.color;
       ctx.fillText(
         item.text,
-        textArea.x + textArea.width / 2,
-        textArea.y + textArea.height / 2
+        xPos,
+        yPos
       );
     });
   };
@@ -300,6 +326,8 @@ export default function MemeGenerator() {
           strokeColor: "#000000",
           strokeWidth: 2,
           align: "center",
+          offsetX: 0,
+          offsetY: 0,
         },
       }))
     );
@@ -434,6 +462,7 @@ export default function MemeGenerator() {
                               style={textContent.find((t) => t.areaIndex === index)?.style || {}}
                               onChange={(value) => handleTextChange(index, value)}
                               onStyleChange={(styleKey, value) => handleTextStyleChange(index, styleKey, value)}
+                              onPositionChange={(offsetX, offsetY) => handleTextPositionChange(index, offsetX, offsetY)}
                             />
                           ))}
                         </div>

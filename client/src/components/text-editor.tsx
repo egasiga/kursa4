@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { CirclePicker } from "react-color";
-import { AlignLeft, AlignCenter, AlignRight, Trash2 } from "lucide-react";
+import { AlignLeft, AlignCenter, AlignRight, Trash2, MoveHorizontal, MoveVertical } from "lucide-react";
 
 interface TextEditorProps {
   areaIndex: number;
@@ -16,6 +16,7 @@ interface TextEditorProps {
   style: any;
   onChange: (value: string) => void;
   onStyleChange: (styleKey: string, value: any) => void;
+  onPositionChange?: (x: number, y: number) => void;
   onRemove?: () => void;
 }
 
@@ -38,6 +39,7 @@ export default function TextEditor({
   style,
   onChange,
   onStyleChange,
+  onPositionChange,
   onRemove,
 }: TextEditorProps) {
   return (
@@ -202,6 +204,83 @@ export default function TextEditor({
           </div>
         </div>
       </div>
+      
+      {onPositionChange && (
+        <div className="space-y-2">
+          <Label className="text-xs">Положение текста</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs mb-1 block">
+                По горизонтали {style.offsetX || 0}
+              </Label>
+              <div className="flex items-center gap-2">
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={() => onPositionChange((style.offsetX || 0) - 10, style.offsetY || 0)}
+                >
+                  <MoveHorizontal className="h-4 w-4 rotate-180" />
+                </Button>
+                <Slider
+                  value={[style.offsetX || 0]}
+                  min={-100}
+                  max={100}
+                  step={1}
+                  onValueChange={(values) => {
+                    onStyleChange("offsetX", values[0]);
+                    onPositionChange(values[0], style.offsetY || 0);
+                  }}
+                  className="flex-1"
+                />
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={() => onPositionChange((style.offsetX || 0) + 10, style.offsetY || 0)}
+                >
+                  <MoveHorizontal className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-xs mb-1 block">
+                По вертикали {style.offsetY || 0}
+              </Label>
+              <div className="flex items-center gap-2">
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={() => onPositionChange(style.offsetX || 0, (style.offsetY || 0) - 10)}
+                >
+                  <MoveVertical className="h-4 w-4 rotate-180" />
+                </Button>
+                <Slider
+                  value={[style.offsetY || 0]}
+                  min={-100}
+                  max={100}
+                  step={1}
+                  onValueChange={(values) => {
+                    onStyleChange("offsetY", values[0]);
+                    onPositionChange(style.offsetX || 0, values[0]);
+                  }}
+                  className="flex-1"
+                />
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={() => onPositionChange(style.offsetX || 0, (style.offsetY || 0) + 10)}
+                >
+                  <MoveVertical className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
