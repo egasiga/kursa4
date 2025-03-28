@@ -72,6 +72,11 @@ export default function CollageCreator() {
   // Apply AI style mutation
   const applyStyleMutation = useMutation({
     mutationFn: async ({ imageData, styleId }: { imageData: string; styleId: string }) => {
+      console.log("Applying style:", {
+        styleId, 
+        styleName: aiStyles?.find(s => String(s.id) === styleId)?.name,
+        styleParams: aiStyles?.find(s => String(s.id) === styleId)?.apiParams
+      });
       const response = await apiRequest("POST", "/api/apply-style", { imageData, styleId });
       return response.json();
     },
@@ -88,6 +93,18 @@ export default function CollageCreator() {
             renderTextOnCanvas();
           };
           img.src = data.styledImage;
+          
+          // Важно: обновляем исходные изображения, заменяя их на стилизованные
+          // Если у нас только одно изображение, заменяем его целиком
+          if (sourceImages.length === 1) {
+            setSourceImages([data.styledImage]);
+          } 
+          // Если у нас коллаж с множеством изображений, мы не можем разделить их
+          // Поэтому создаем новый массив с одним стилизованным изображением всего коллажа
+          else if (sourceImages.length > 1) {
+            // Сохраняем стилизованную версию как новый единственный исходный файл
+            setSourceImages([data.styledImage]);
+          }
         }
       }
       
