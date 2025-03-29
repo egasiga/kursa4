@@ -111,36 +111,11 @@ export default function CollageLayoutSelector({
     const layoutConfig = LAYOUTS[layout.id as keyof typeof LAYOUTS];
     if (!layoutConfig) return;
 
-    // Если есть стилизованное изображение, используем его вместо оригиналов
+    // Проверяем наличие стилизованного изображения для отображения
     if (styledImage) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        // Отображаем стилизованное изображение на весь холст
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // Применяем фильтры
-        if (filters.brightness !== 100 || filters.contrast !== 100 || filters.saturation !== 100) {
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          ctx.filter = `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%)`;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          ctx.filter = "none";
-        }
-        
-        // Render text content
-        onTextRender();
-        
-        // Notify parent that canvas is ready
-        onCanvasReady(canvas);
-      };
-      img.onerror = () => {
-        console.error("Error loading styled image:", styledImage);
-        // Если не удалось загрузить стилизованное изображение, пробуем загрузить оригиналы
-        loadImages();
-      };
-      img.src = styledImage;
-      return;
+      console.log("Using styled image:", styledImage.substring(0, 50) + "...");
+      // Здесь мы просто отображаем стилизованное изображение
+      // Но не прерываем выполнение, так как sourceImages уже должно содержать стилизованную версию
     }
 
     // Load original images

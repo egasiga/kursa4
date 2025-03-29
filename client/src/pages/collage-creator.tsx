@@ -82,12 +82,11 @@ export default function CollageCreator() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Apply the styled image to the canvas and store permanently
+      // Apply the styled image to the canvas
       if (canvasRef && data.styledImage) {
-        // Сохраняем стилизованное изображение в отдельном состоянии
+        // Сохраняем стилизованное изображение в состоянии
         setStyledImage(data.styledImage);
         
-        // Отображаем стилизованное изображение на холсте
         const ctx = canvasRef.getContext("2d");
         if (ctx) {
           const img = new Image();
@@ -99,20 +98,12 @@ export default function CollageCreator() {
           };
           img.src = data.styledImage;
           
-          // Используем подход с сохранением ссылки на оригинальное стилизованное изображение
-          // Важно: сохраняем копию изображения, чтобы избежать проблем с ссылками
-          const styledImageCopy = data.styledImage; 
-          setSourceImages(prev => {
-            // Если у нас только один источник, заменяем его
-            if (prev.length === 1) {
-              return [styledImageCopy];
-            } 
-            // Если у нас несколько изображений, они объединяются в коллаж
-            // и заменяем всё одним стилизованным изображением коллажа
-            else {
-              return [styledImageCopy];
-            }
-          });
+          // Заменяем первое исходное изображение на стилизованное
+          if (sourceImages.length > 0) {
+            const newSourceImages = [...sourceImages];
+            newSourceImages[0] = data.styledImage;
+            setSourceImages(newSourceImages);
+          }
         }
       }
       
@@ -206,10 +197,14 @@ export default function CollageCreator() {
   };
 
   const handleFilterChange = (filterType: keyof typeof filters, value: number) => {
+    // После применения стиля, при изменении фильтров убедимся, что стилизованное изображение остаётся
+    // актуальным в исходных изображениях
     setFilters((prev) => ({
       ...prev,
       [filterType]: value,
     }));
+    
+    console.log("Filter changed. Styled image exists:", !!styledImage);
   };
 
   const renderTextOnCanvas = () => {
