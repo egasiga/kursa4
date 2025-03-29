@@ -74,7 +74,6 @@ interface CollageLayoutSelectorProps {
   onCanvasReady: (canvas: HTMLCanvasElement) => void;
   onTextRender: () => void;
   onRemoveImage: (index: number) => void;
-  styledImage?: string | null; // Добавляем возможность передавать стилизованное изображение
 }
 
 export default function CollageLayoutSelector({
@@ -85,7 +84,6 @@ export default function CollageLayoutSelector({
   onCanvasReady,
   onTextRender,
   onRemoveImage,
-  styledImage,
 }: CollageLayoutSelectorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
@@ -111,17 +109,9 @@ export default function CollageLayoutSelector({
     const layoutConfig = LAYOUTS[layout.id as keyof typeof LAYOUTS];
     if (!layoutConfig) return;
 
-    // Проверяем наличие стилизованного изображения для отображения
-    if (styledImage) {
-      console.log("Using styled image in layout selector");
-      
-      // Убедимся, что стилизованное изображение находится в sourceImages
-      // Так избегаем проблемы, когда при перерисовке изображение возвращается к исходному
-      if (sourceImages.length > 0 && sourceImages[0] !== styledImage) {
-        console.log("Fixing sourceImages to ensure styled image is used");
-        // Не изменяем оригинальный массив, только логгируем проблему
-      }
-    }
+    // Никаких проверок или изменений стилизованных изображений
+    // То, что пришло в sourceImages - то и используем
+    // Это исключает любую возможность возврата к оригинальному изображению
 
     // Load original images
     const loadImages = async () => {
@@ -276,7 +266,7 @@ export default function CollageLayoutSelector({
       onCanvasReady(canvas);
     }
     
-  }, [layout, sourceImages, filters, onCanvasReady, onTextRender, styledImage]);
+  }, [layout, sourceImages, filters, onCanvasReady, onTextRender]);
 
   return (
     <div className="relative w-full h-full flex flex-col items-center">

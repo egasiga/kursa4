@@ -33,7 +33,6 @@ export default function CollageCreator() {
   const [selectedAiStyle, setSelectedAiStyle] = useState<string>("none");
   const [textContent, setTextContent] = useState<{ id: string; text: string; style: any; position: { x: number; y: number } }[]>([]);
   const [sourceImages, setSourceImages] = useState<string[]>([]);
-  const [styledImage, setStyledImage] = useState<string | null>(null); // Сохраняем стилизованное изображение отдельно
   const [filters, setFilters] = useState({
     brightness: 100,
     contrast: 100,
@@ -70,7 +69,7 @@ export default function CollageCreator() {
     },
   });
 
-  // Apply AI style mutation
+  // Apply AI style mutation - ПРОСТОЕ РАДИКАЛЬНОЕ РЕШЕНИЕ
   const applyStyleMutation = useMutation({
     mutationFn: async ({ imageData, styleId }: { imageData: string; styleId: string }) => {
       console.log("Applying style:", {
@@ -82,40 +81,22 @@ export default function CollageCreator() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Apply the styled image to the canvas
+      // Применяем стилизованное изображение и НАВСЕГДА заменяем исходное
       if (canvasRef && data.styledImage) {
-        // Создаем фиксированную копию стилизованного изображения
-        const styledImageData = data.styledImage;
-        
-        // Сначала сохраняем стилизованное изображение в постоянном стейте
-        setStyledImage(styledImageData);
-        
-        // Затем заменяем исходные изображения (это сохранит стилизацию при перерисовке)
+        // Просто заменяем исходное изображение стилизованным
         if (sourceImages.length > 0) {
-          // Создаем новый массив изображений, чтобы React обнаружил изменение
+          // Создаем новый массив и помещаем стилизованное изображение на место первого
           const updatedImages = [...sourceImages];
-          updatedImages[0] = styledImageData;
+          updatedImages[0] = data.styledImage;
           setSourceImages(updatedImages);
-        }
-        
-        // Затем рисуем на канвасе
-        const ctx = canvasRef.getContext("2d");
-        if (ctx) {
-          const img = new Image();
-          img.onload = () => {
-            ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
-            ctx.drawImage(img, 0, 0, canvasRef.width, canvasRef.height);
-            // Re-add text after applying style
-            renderTextOnCanvas();
-          };
-          img.src = styledImageData;
+          
+          // Оповещаем пользователя
+          toast({
+            title: "AI style applied",
+            description: "Your image has been transformed with AI styling.",
+          });
         }
       }
-      
-      toast({
-        title: "AI style applied",
-        description: "Your collage has been transformed with AI styling.",
-      });
     },
     onError: (error) => {
       toast({
@@ -144,15 +125,8 @@ export default function CollageCreator() {
           loadedCount++;
           
           if (loadedCount === totalFiles) {
-            // При добавлении новых изображений сохраняем стилизованное изображение
-            if (styledImage && sourceImages.length > 0 && sourceImages[0] === styledImage) {
-              // Стилизованное изображение останется на первой позиции
-              const updatedImages = [...sourceImages, ...newImages].slice(0, selectedLayout.cells);
-              console.log("Added new images while preserving styled image");
-              setSourceImages(updatedImages);
-            } else {
-              setSourceImages((prev) => [...prev, ...newImages].slice(0, selectedLayout.cells));
-            }
+            // Загружаем новые изображения, просто добавляя их к существующим
+            setSourceImages((prev) => [...prev, ...newImages].slice(0, selectedLayout.cells));
           }
         }
       };
@@ -210,14 +184,11 @@ export default function CollageCreator() {
   };
 
   const handleFilterChange = (filterType: keyof typeof filters, value: number) => {
-    // После применения стиля, при изменении фильтров убедимся, что стилизованное изображение остаётся
-    // актуальным в исходных изображениях
+    // Просто изменяем фильтры без какой-либо проверки стилизации
     setFilters((prev) => ({
       ...prev,
       [filterType]: value,
     }));
-    
-    console.log("Filter changed. Styled image exists:", !!styledImage);
   };
 
   const renderTextOnCanvas = () => {
@@ -298,30 +269,17 @@ export default function CollageCreator() {
   };
 
   const handleLayoutChange = (layout: typeof LAYOUTS[0]) => {
-    // При изменении макета, убедимся, что стилизованное изображение сохраняется
+    // Просто изменяем макет
     setSelectedLayout(layout);
     
-    // Trim source images if new layout has fewer cells
+    // Обрезаем изображения, если новый макет имеет меньше ячеек
     if (sourceImages.length > layout.cells) {
-      // Сохраняем стилизованное изображение, если оно есть и находится в первой позиции
-      if (styledImage && sourceImages[0] === styledImage) {
-        const trimmedImages = sourceImages.slice(0, layout.cells);
-        // Убедимся, что стилизованное изображение все еще на месте
-        setSourceImages(trimmedImages);
-        console.log("Layout changed, preserved styled image");
-      } else {
-        setSourceImages((prev) => prev.slice(0, layout.cells));
-      }
+      setSourceImages((prev) => prev.slice(0, layout.cells));
     }
   };
 
   const handleRemoveImage = (index: number) => {
-    // Если удаляется первое изображение и оно является стилизованным, сбросим стилизацию
-    if (index === 0 && styledImage && sourceImages[0] === styledImage) {
-      setStyledImage(null);
-      console.log("Styled image was removed");
-    }
-    
+    // Просто удаляем изображение по индексу
     setSourceImages((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -339,7 +297,6 @@ export default function CollageCreator() {
                 onCanvasReady={setCanvasRef}
                 onTextRender={renderTextOnCanvas}
                 onRemoveImage={handleRemoveImage}
-                styledImage={styledImage}
               />
             </CardContent>
           </Card>
