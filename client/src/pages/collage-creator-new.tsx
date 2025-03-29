@@ -270,20 +270,13 @@ export default function CollageCreatorNew() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardContent className="p-6 flex flex-col items-center justify-center min-h-[500px]">
-              {/* Отображение стилизованного изображения если оно есть */}
-              {sourceImages.length > 0 ? (
-                <StylizedImageDisplay 
-                  onImageReady={handleImageCanvasReady} 
-                  sourceImages={sourceImages} 
-                />
-              ) : (
+              {/* Загрузка изображений если их нет */}
+              {sourceImages.length === 0 ? (
                 <div className="text-center text-gray-500">
                   Загрузите изображение для создания коллажа
                 </div>
-              )}
-
-              {/* Если канвас готов, отображаем коллаж с текстами */}
-              {canvasRef && (
+              ) : (
+                /* Отображаем коллаж без стилизации - используем только базовый компонент */
                 <CollageLayoutSelector
                   layout={selectedLayout}
                   sourceImages={sourceImages}

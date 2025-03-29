@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2 } from "lucide-react";
-import { useStyleContext } from "@/context/StyleContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -15,7 +14,6 @@ interface StyleManagerProps {
 export function StyleManager({ canvasRef, disableControls = false }: StyleManagerProps) {
   const [selectedStyle, setSelectedStyle] = useState<string>("none");
   const { toast } = useToast();
-  const { persistImage, isStylized, resetStylizedImage } = useStyleContext();
 
   // Загружаем доступные стили
   const { data: aiStyles } = useQuery<{ id: number; name: string; description: string | null; previewUrl: string | null; apiParams: unknown }[]>({
@@ -33,19 +31,27 @@ export function StyleManager({ canvasRef, disableControls = false }: StyleManage
       return response.json();
     },
     onSuccess: (data, variables) => {
-      if (data.styledImage) {
-        // Получаем исходное изображение с канваса
-        if (canvasRef) {
-          const originalImage = canvasRef.toDataURL("image/png");
-          
-          // Сохраняем пару (стилизованное + оригинальное)
-          persistImage(data.styledImage, originalImage);
-          
-          toast({
-            title: "Стиль применен",
-            description: `Изображение стилизовано в стиле ${aiStyles?.find((s) => String(s.id) === variables.styleId)?.name}`,
-          });
-        }
+      if (data.styledImage && canvasRef) {
+        // НЕОБРАТИМО заменяем изображение в канвасе на стилизованное
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const ctx = canvasRef.getContext('2d');
+          if (ctx) {
+            // Очищаем канвас
+            ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
+            
+            // Рисуем новое стилизованное изображение на канвасе
+            ctx.drawImage(img, 0, 0, canvasRef.width, canvasRef.height);
+            
+            // ВАЖНО: НЕ сохраняем оригинальное изображение, работаем только со стилизованным
+            toast({
+              title: "Стиль применен",
+              description: `Изображение стилизовано в стиле ${aiStyles?.find((s) => String(s.id) === variables.styleId)?.name}`,
+            });
+          }
+        };
+        img.src = data.styledImage;
       }
     },
     onError: (error) => {
@@ -65,14 +71,7 @@ export function StyleManager({ canvasRef, disableControls = false }: StyleManage
     applyStyleMutation.mutate({ imageData, styleId: selectedStyle });
   };
 
-  // Обработчик сброса стилизации
-  const handleResetStyle = () => {
-    resetStylizedImage();
-    toast({
-      title: "Стилизация сброшена",
-      description: "Изображение возвращено к исходному состоянию",
-    });
-  };
+  // Больше не используем обработчик сброса стилизации - изменения необратимы
 
   return (
     <div className="space-y-4">
@@ -97,28 +96,15 @@ export function StyleManager({ canvasRef, disableControls = false }: StyleManage
         </Select>
       </div>
       
-      <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          className="w-full gap-2"
-          onClick={handleApplyStyle}
-          disabled={disableControls || selectedStyle === "none" || applyStyleMutation.isPending || !canvasRef}
-        >
-          <Wand2 className="w-4 h-4" />
-          {applyStyleMutation.isPending ? "Применение..." : "Применить стиль"}
-        </Button>
-        
-        {isStylized && (
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={handleResetStyle}
-            disabled={disableControls || applyStyleMutation.isPending}
-          >
-            Сбросить стиль
-          </Button>
-        )}
-      </div>
+      <Button
+        variant="secondary"
+        className="w-full gap-2"
+        onClick={handleApplyStyle}
+        disabled={disableControls || selectedStyle === "none" || applyStyleMutation.isPending || !canvasRef}
+      >
+        <Wand2 className="w-4 h-4" />
+        {applyStyleMutation.isPending ? "Применение..." : "Применить стиль"}
+      </Button>
     </div>
   );
 }
