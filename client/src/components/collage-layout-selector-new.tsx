@@ -112,7 +112,6 @@ function CollageLayoutSelector({
 
     // Никаких проверок или изменений стилизованных изображений
     // То, что пришло в sourceImages - то и используем, НЕ ТРОГАЯ его
-    // Это обеспечивает работу со стилизованными изображениями без возврата к оригиналу
     console.log("Отрисовка коллажа со следующими изображениями:", sourceImages);
 
     // Load images (СТРОГО используем то, что пришло в sourceImages)
@@ -309,8 +308,8 @@ function CollageLayoutSelector({
   );
 }
 
-// Применяем мемоизацию для предотвращения ненужных перерисовок
-export default memo(CollageLayoutSelector, (prevProps, nextProps) => {
+// Используем memo для предотвращения ненужных перерисовок
+const MemoizedCollageLayoutSelector = memo(CollageLayoutSelector, (prevProps, nextProps) => {
   // Проверяем важные изменения, которые действительно требуют перерисовки
   // Возвращаем true, если компонент НЕ нужно перерисовывать
   
@@ -356,3 +355,5 @@ export default memo(CollageLayoutSelector, (prevProps, nextProps) => {
   console.log("Существенных изменений не обнаружено - пропускаем перерисовку");
   return true;
 });
+
+export default MemoizedCollageLayoutSelector;

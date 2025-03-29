@@ -311,8 +311,7 @@ function CollageLayoutSelector({
   );
 }
 
-// Импортируем memo и экспортируем с его использованием для предотвращения ненужных перерисовок
-import { memo } from 'react';
+// Экспортируем с использованием memo для предотвращения ненужных перерисовок
 
 export default memo(CollageLayoutSelector, (prevProps, nextProps) => {
   // Проверяем важные изменения, которые действительно требуют перерисовки
