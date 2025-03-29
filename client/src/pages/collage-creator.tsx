@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import CollageLayoutSelector from "@/components/collage-layout-selector";
+import CollageLayoutSelector from "@/components/collage-layout-selector-new";
 import TextEditor from "@/components/text-editor";
 import AiStyleSelector from "@/components/ai-style-selector";
 import SocialShare from "@/components/social-share";
@@ -43,7 +43,7 @@ export default function CollageCreator() {
   const [showTextEditor, setShowTextEditor] = useState(false);
 
   // Fetch AI styles
-  const { data: aiStyles } = useQuery({
+  const { data: aiStyles } = useQuery<{ id: number; name: string; description: string | null; previewUrl: string | null; apiParams: unknown }[]>({
     queryKey: ["/api/styles"],
   });
 
@@ -69,15 +69,44 @@ export default function CollageCreator() {
     },
   });
 
-  // УЛЬТРА-РАДИКАЛЬНОЕ РЕШЕНИЕ: Создаем отдельное состояние для хранения последнего стилизованного изображения
+  // АБСОЛЮТНО НОВЫЙ ПОДХОД: Используем localStorage для хранения постоянного стилизованного изображения
+  // Это гарантирует, что даже если состояние компонента будет сброшено, мы всегда сможем восстановить
+  // стилизованное изображение из localStorage
+  
   const [permanentStylizedImage, setPermanentStylizedImage] = useState<string | null>(null);
   
-  // Проверим, не сбросилось ли стилизованное изображение
+  // При инициализации компонента, проверяем есть ли сохраненное стилизованное изображение в localStorage
   useEffect(() => {
-    // Если у нас есть сохраненное стилизованное изображение, но оно исчезло из sourceImages,
-    // вернем его на место
+    const savedImage = localStorage.getItem('stylizedImage');
+    if (savedImage) {
+      console.log("Инициализация: восстановление стилизованного изображения из localStorage");
+      setPermanentStylizedImage(savedImage);
+      
+      // Если у нас уже есть изображения, заменим первое на стилизованное
+      if (sourceImages.length > 0) {
+        const updatedImages = [...sourceImages];
+        updatedImages[0] = savedImage;
+        setSourceImages(updatedImages);
+      } else {
+        // Если у нас еще нет изображений, добавим стилизованное как первое
+        setSourceImages([savedImage]);
+      }
+    }
+  }, []);  // Пустой массив означает, что это выполнится только при монтировании компонента
+  
+  // Каждый раз, когда изменяется permanentStylizedImage, сохраняем его в localStorage
+  useEffect(() => {
+    if (permanentStylizedImage) {
+      console.log("Сохранение стилизованного изображения в localStorage");
+      localStorage.setItem('stylizedImage', permanentStylizedImage);
+    }
+  }, [permanentStylizedImage]);
+  
+  // Проверка и восстановление стилизованного изображения из локального состояния
+  useEffect(() => {
+    // Если у нас есть стилизованное изображение, но оно исчезло из sourceImages, вернем его на место
     if (permanentStylizedImage && sourceImages.length > 0 && sourceImages[0] !== permanentStylizedImage) {
-      console.log("Восстановление стилизованного изображения...");
+      console.log("Восстановление стилизованного изображения из локального состояния");
       const updatedImages = [...sourceImages];
       updatedImages[0] = permanentStylizedImage;
       setSourceImages(updatedImages);
@@ -89,8 +118,8 @@ export default function CollageCreator() {
     mutationFn: async ({ imageData, styleId }: { imageData: string; styleId: string }) => {
       console.log("Applying style:", {
         styleId, 
-        styleName: aiStyles?.find(s => String(s.id) === styleId)?.name,
-        styleParams: aiStyles?.find(s => String(s.id) === styleId)?.apiParams
+        styleName: aiStyles?.find((s) => String(s.id) === styleId)?.name,
+        styleParams: aiStyles?.find((s) => String(s.id) === styleId)?.apiParams
       });
       const response = await apiRequest("POST", "/api/apply-style", { imageData, styleId });
       return response.json();

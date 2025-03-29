@@ -76,8 +76,6 @@ interface CollageLayoutSelectorProps {
   onRemoveImage: (index: number) => void;
 }
 
-// Используем memo для предотвращения ненужных перерисовок
-
 function CollageLayoutSelector({
   layout,
   sourceImages,
@@ -311,9 +309,7 @@ function CollageLayoutSelector({
   );
 }
 
-// Импортируем memo и экспортируем с его использованием для предотвращения ненужных перерисовок
-import { memo } from 'react';
-
+// Применяем мемоизацию для предотвращения ненужных перерисовок
 export default memo(CollageLayoutSelector, (prevProps, nextProps) => {
   // Проверяем важные изменения, которые действительно требуют перерисовки
   // Возвращаем true, если компонент НЕ нужно перерисовывать
