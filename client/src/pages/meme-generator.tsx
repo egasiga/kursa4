@@ -246,7 +246,7 @@ export default function MemeGenerator() {
     if (!canvasRef || selectedAiStyle === "none") return;
     
     // Получаем выбранный стиль из списка доступных стилей
-    const selectedStyle = aiStyles?.find(style => String(style.id) === selectedAiStyle);
+    const selectedStyle = Array.isArray(aiStyles) ? aiStyles.find(style => String(style.id) === selectedAiStyle) : undefined;
     if (!selectedStyle) {
       toast({
         title: "Стиль не найден",
@@ -371,7 +371,7 @@ export default function MemeGenerator() {
                 <div className="text-center p-8 bg-accent/30 rounded-lg w-full">
                   <p className="text-xl mb-4">Select a template to get started</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
-                    {templates && templates.slice(0, 6).map((template: MemeTemplate) => (
+                    {templates && Array.isArray(templates) ? templates.slice(0, 6).map((template: MemeTemplate) => (
                       <div
                         key={template.id}
                         className="cursor-pointer rounded-md overflow-hidden border hover:border-primary transition-colors"
@@ -383,7 +383,7 @@ export default function MemeGenerator() {
                           className="w-full h-auto object-cover aspect-square"
                         />
                       </div>
-                    ))}
+                    )) : null}
                   </div>
                 </div>
               )}
@@ -515,7 +515,7 @@ export default function MemeGenerator() {
                       </TabsContent>
                       <TabsContent value="ai" className="m-0">
                         <AiStyleSelector
-                          styles={aiStyles || []}
+                          styles={Array.isArray(aiStyles) ? aiStyles : []}
                           selectedStyle={selectedAiStyle}
                           onChange={setSelectedAiStyle}
                         />

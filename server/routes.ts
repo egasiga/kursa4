@@ -920,14 +920,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply AI style to an image
   app.post("/api/apply-style", async (req: Request, res: Response) => {
     try {
-      const { image, styleParams } = req.body;
+      // Поддерживаем оба формата запросов:
+      // 1. От meme-generator: { image, styleParams }
+      // 2. От collage-creator: { imageData, styleId }
+      let sourceImage: string;
+      let styleParameters: any;
       
-      if (!image || !styleParams) {
-        return res.status(400).json({ message: "Missing image or style parameters" });
+      if (req.body.image && req.body.styleParams) {
+        // Формат от meme-generator
+        sourceImage = req.body.image;
+        styleParameters = req.body.styleParams;
+      } else if (req.body.imageData && req.body.styleId) {
+        // Формат от collage-creator
+        sourceImage = req.body.imageData;
+        
+        // Получаем стиль по ID из хранилища
+        const style = await storage.getAiStyle(parseInt(req.body.styleId));
+        if (!style) {
+          return res.status(404).json({ message: "Style not found" });
+        }
+        
+        // Формируем параметры стиля
+        styleParameters = {
+          aiModel: style.name,
+          styleIntensity: 1.0,
+          transformType: "image-to-image",
+          styleReference: style.description || "general",
+          ...(typeof style.apiParams === 'object' && style.apiParams !== null ? style.apiParams : {})
+        };
+      } else {
+        return res.status(400).json({ message: "Missing required parameters. Need either (image and styleParams) or (imageData and styleId)" });
       }
       
       // Применяем AI-стиль к изображению
-      const styledImage = await applyAiStyle(image, styleParams);
+      const styledImage = await applyAiStyle(sourceImage, styleParameters);
       
       res.json({ styledImage });
     } catch (error) {

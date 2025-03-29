@@ -74,8 +74,8 @@ export default function CollageCreator() {
     mutationFn: async ({ imageData, styleId }: { imageData: string; styleId: string }) => {
       console.log("Applying style:", {
         styleId, 
-        styleName: aiStyles?.find(s => String(s.id) === styleId)?.name,
-        styleParams: aiStyles?.find(s => String(s.id) === styleId)?.apiParams
+        styleName: aiStyles && Array.isArray(aiStyles) ? aiStyles.find(s => String(s.id) === styleId)?.name : 'unknown',
+        styleParams: aiStyles && Array.isArray(aiStyles) ? aiStyles.find(s => String(s.id) === styleId)?.apiParams : {}
       });
       const response = await apiRequest("POST", "/api/apply-style", { imageData, styleId });
       return response.json();
@@ -484,7 +484,7 @@ export default function CollageCreator() {
                   </TabsContent>
                   <TabsContent value="ai" className="m-0">
                     <AiStyleSelector
-                      styles={aiStyles || []}
+                      styles={Array.isArray(aiStyles) ? aiStyles : []}
                       selectedStyle={selectedAiStyle}
                       onChange={setSelectedAiStyle}
                     />
