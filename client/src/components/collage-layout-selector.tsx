@@ -92,6 +92,7 @@ export default function CollageLayoutSelector({
   const canvasHeight = 800;
 
   useEffect(() => {
+    console.log("CollageLayoutSelector перерисовка - обнаружено изменение зависимостей");
     if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
@@ -110,12 +111,19 @@ export default function CollageLayoutSelector({
     if (!layoutConfig) return;
 
     // Никаких проверок или изменений стилизованных изображений
-    // То, что пришло в sourceImages - то и используем
-    // Это исключает любую возможность возврата к оригинальному изображению
+    // То, что пришло в sourceImages - то и используем, НЕ ТРОГАЯ его
+    // Это обеспечивает работу со стилизованными изображениями без возврата к оригиналу
+    console.log("Отрисовка коллажа со следующими изображениями:", sourceImages);
 
-    // Load original images
+    // Load images (СТРОГО используем то, что пришло в sourceImages)
     const loadImages = async () => {
       imagesRef.current = [];
+      
+      // Логируем каждое изображение перед созданием
+      sourceImages.forEach((src, index) => {
+        console.log(`Создание Image объекта для изображения ${index} с src:`, 
+          src.length > 100 ? src.substring(0, 100) + '...' : src);
+      });
 
       // Create array of promises to load all images
       const imagePromises = sourceImages.map((src, index) => {
@@ -123,6 +131,7 @@ export default function CollageLayoutSelector({
           const img = new Image();
           img.crossOrigin = "anonymous";
           img.onload = () => {
+            console.log(`Изображение ${index} успешно загружено`);
             imagesRef.current[index] = img;
             resolve(img);
           };

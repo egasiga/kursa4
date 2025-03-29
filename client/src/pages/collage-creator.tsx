@@ -69,7 +69,22 @@ export default function CollageCreator() {
     },
   });
 
-  // Apply AI style mutation - ПРОСТОЕ РАДИКАЛЬНОЕ РЕШЕНИЕ
+  // УЛЬТРА-РАДИКАЛЬНОЕ РЕШЕНИЕ: Создаем отдельное состояние для хранения последнего стилизованного изображения
+  const [permanentStylizedImage, setPermanentStylizedImage] = useState<string | null>(null);
+  
+  // Проверим, не сбросилось ли стилизованное изображение
+  useEffect(() => {
+    // Если у нас есть сохраненное стилизованное изображение, но оно исчезло из sourceImages,
+    // вернем его на место
+    if (permanentStylizedImage && sourceImages.length > 0 && sourceImages[0] !== permanentStylizedImage) {
+      console.log("Восстановление стилизованного изображения...");
+      const updatedImages = [...sourceImages];
+      updatedImages[0] = permanentStylizedImage;
+      setSourceImages(updatedImages);
+    }
+  }, [permanentStylizedImage, sourceImages]);
+  
+  // Apply AI style mutation
   const applyStyleMutation = useMutation({
     mutationFn: async ({ imageData, styleId }: { imageData: string; styleId: string }) => {
       console.log("Applying style:", {
@@ -83,9 +98,11 @@ export default function CollageCreator() {
     onSuccess: (data) => {
       // Применяем стилизованное изображение и НАВСЕГДА заменяем исходное
       if (canvasRef && data.styledImage) {
-        // Просто заменяем исходное изображение стилизованным
+        // 1. Сохраняем стилизованное изображение в отдельном состоянии
+        setPermanentStylizedImage(data.styledImage);
+        
+        // 2. Полностью заменяем массив sourceImages, используя новое стилизованное изображение
         if (sourceImages.length > 0) {
-          // Создаем новый массив и помещаем стилизованное изображение на место первого
           const updatedImages = [...sourceImages];
           updatedImages[0] = data.styledImage;
           setSourceImages(updatedImages);
@@ -125,8 +142,18 @@ export default function CollageCreator() {
           loadedCount++;
           
           if (loadedCount === totalFiles) {
-            // Загружаем новые изображения, просто добавляя их к существующим
-            setSourceImages((prev) => [...prev, ...newImages].slice(0, selectedLayout.cells));
+            console.log("Загрузка новых изображений, сохраняя стилизованные...");
+            // Загружаем новые изображения, но защищаем стилизованное изображение
+            setSourceImages((prev) => {
+              // Если у нас есть стилизованное изображение, то сохраняем его в начале массива
+              if (permanentStylizedImage && prev.length > 0 && prev[0] === permanentStylizedImage) {
+                console.log("Обнаружено стилизованное изображение - сохраняем его при добавлении новых");
+                return [permanentStylizedImage, ...newImages].slice(0, selectedLayout.cells);
+              } else {
+                // Иначе просто добавляем новые изображения
+                return [...prev, ...newImages].slice(0, selectedLayout.cells);
+              }
+            });
           }
         }
       };
@@ -269,17 +296,43 @@ export default function CollageCreator() {
   };
 
   const handleLayoutChange = (layout: typeof LAYOUTS[0]) => {
-    // Просто изменяем макет
+    // Изменяем макет
     setSelectedLayout(layout);
     
     // Обрезаем изображения, если новый макет имеет меньше ячеек
     if (sourceImages.length > layout.cells) {
-      setSourceImages((prev) => prev.slice(0, layout.cells));
+      setSourceImages((prev) => {
+        // Если у нас есть стилизованное изображение, обязательно сохраняем его
+        if (permanentStylizedImage && prev.length > 0 && prev[0] === permanentStylizedImage) {
+          console.log("Сохраняем стилизованное изображение при изменении макета");
+          // Гарантируем, что стилизованное изображение останется первым в любом случае
+          const newArray = [permanentStylizedImage];
+          // Добавляем другие изображения до указанного лимита (минус стилизованное)
+          for (let i = 1; i < layout.cells && i < prev.length; i++) {
+            newArray.push(prev[i]);
+          }
+          return newArray;
+        } else {
+          // Если нет стилизованного изображения, просто обрезаем массив
+          return prev.slice(0, layout.cells);
+        }
+      });
     }
   };
 
   const handleRemoveImage = (index: number) => {
-    // Просто удаляем изображение по индексу
+    // Важно! Защита от удаления стилизованного изображения
+    if (index === 0 && permanentStylizedImage) {
+      // Если пытаемся удалить стилизованное изображение - просто выводим сообщение
+      console.log("Попытка удалить стилизованное изображение - игнорируем");
+      toast({
+        title: "Нельзя удалить стилизованное изображение",
+        description: "Сначала загрузите новое изображение для замены стилизованного",
+      });
+      return;
+    }
+    
+    // Удаляем изображение по индексу
     setSourceImages((prev) => prev.filter((_, i) => i !== index));
   };
 
