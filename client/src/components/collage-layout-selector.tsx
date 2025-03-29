@@ -1,4 +1,4 @@
-import { useEffect, useRef, memo } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash } from "lucide-react";
 
@@ -76,9 +76,7 @@ interface CollageLayoutSelectorProps {
   onRemoveImage: (index: number) => void;
 }
 
-// Используем memo для предотвращения ненужных перерисовок
-
-function CollageLayoutSelector({
+export default function CollageLayoutSelector({
   layout,
   sourceImages,
   filters,
@@ -94,7 +92,6 @@ function CollageLayoutSelector({
   const canvasHeight = 800;
 
   useEffect(() => {
-    console.log("CollageLayoutSelector перерисовка - обнаружено изменение зависимостей");
     if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
@@ -113,19 +110,12 @@ function CollageLayoutSelector({
     if (!layoutConfig) return;
 
     // Никаких проверок или изменений стилизованных изображений
-    // То, что пришло в sourceImages - то и используем, НЕ ТРОГАЯ его
-    // Это обеспечивает работу со стилизованными изображениями без возврата к оригиналу
-    console.log("Отрисовка коллажа со следующими изображениями:", sourceImages);
+    // То, что пришло в sourceImages - то и используем
+    // Это исключает любую возможность возврата к оригинальному изображению
 
-    // Load images (СТРОГО используем то, что пришло в sourceImages)
+    // Load original images
     const loadImages = async () => {
       imagesRef.current = [];
-      
-      // Логируем каждое изображение перед созданием
-      sourceImages.forEach((src, index) => {
-        console.log(`Создание Image объекта для изображения ${index} с src:`, 
-          src.length > 100 ? src.substring(0, 100) + '...' : src);
-      });
 
       // Create array of promises to load all images
       const imagePromises = sourceImages.map((src, index) => {
@@ -133,7 +123,6 @@ function CollageLayoutSelector({
           const img = new Image();
           img.crossOrigin = "anonymous";
           img.onload = () => {
-            console.log(`Изображение ${index} успешно загружено`);
             imagesRef.current[index] = img;
             resolve(img);
           };
@@ -310,52 +299,3 @@ function CollageLayoutSelector({
     </div>
   );
 }
-
-// Экспортируем с использованием memo для предотвращения ненужных перерисовок
-
-export default memo(CollageLayoutSelector, (prevProps, nextProps) => {
-  // Проверяем важные изменения, которые действительно требуют перерисовки
-  // Возвращаем true, если компонент НЕ нужно перерисовывать
-  
-  // Проверка изменения layout
-  if (prevProps.layout.id !== nextProps.layout.id) {
-    console.log("Layout изменен - требуется перерисовка");
-    return false;
-  }
-  
-  // Проверка изменений в sourceImages (глубокая проверка)
-  if (prevProps.sourceImages.length !== nextProps.sourceImages.length) {
-    console.log("Количество изображений изменилось - требуется перерисовка");
-    return false;
-  }
-  
-  // Проверяем содержимое изображений
-  const imagesChanged = prevProps.sourceImages.some((src, i) => 
-    src !== nextProps.sourceImages[i]
-  );
-  
-  if (imagesChanged) {
-    console.log("Содержимое изображений изменилось - требуется перерисовка");
-    return false;
-  }
-  
-  // Проверка изменений в фильтрах
-  if (
-    prevProps.filters.brightness !== nextProps.filters.brightness ||
-    prevProps.filters.contrast !== nextProps.filters.contrast ||
-    prevProps.filters.saturation !== nextProps.filters.saturation
-  ) {
-    console.log("Фильтры изменены - требуется перерисовка");
-    return false;
-  }
-  
-  // Если текста стало больше или меньше - перерисовываем
-  if (prevProps.textContent.length !== nextProps.textContent.length) {
-    console.log("Количество текстовых элементов изменилось - требуется перерисовка");
-    return false;
-  }
-  
-  // Если до сюда дошли, значит существенных изменений не обнаружено
-  console.log("Существенных изменений не обнаружено - пропускаем перерисовку");
-  return true;
-});

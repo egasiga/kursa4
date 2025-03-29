@@ -68,10 +68,7 @@ export default function AiStyleSelector({
       </ScrollArea>
       
       <div className="text-sm text-muted-foreground">
-        <p className="mb-2">Select an AI style to transform your image. This will apply artistic effects using AI algorithms.</p>
-        <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-md mt-2 text-amber-800 dark:text-amber-300">
-          <strong>⚠️ WARNING:</strong> Style changes are permanent and cannot be undone. Your original image will be irreversibly replaced with the stylized version.
-        </div>
+        Select an AI style to transform your image. This will apply artistic effects using AI algorithms.
       </div>
     </div>
   );

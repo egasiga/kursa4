@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import CollageLayoutSelector from "@/components/collage-layout-selector-new";
+import CollageLayoutSelector from "@/components/collage-layout-selector";
 import TextEditor from "@/components/text-editor";
 import AiStyleSelector from "@/components/ai-style-selector";
 import SocialShare from "@/components/social-share";
@@ -43,7 +43,7 @@ export default function CollageCreator() {
   const [showTextEditor, setShowTextEditor] = useState(false);
 
   // Fetch AI styles
-  const { data: aiStyles } = useQuery<{ id: number; name: string; description: string | null; previewUrl: string | null; apiParams: unknown }[]>({
+  const { data: aiStyles } = useQuery({
     queryKey: ["/api/styles"],
   });
 
@@ -69,57 +69,13 @@ export default function CollageCreator() {
     },
   });
 
-  // АБСОЛЮТНО НОВЫЙ ПОДХОД: Используем localStorage для хранения постоянного стилизованного изображения
-  // Это гарантирует, что даже если состояние компонента будет сброшено, мы всегда сможем восстановить
-  // стилизованное изображение из localStorage
-  
-  const [permanentStylizedImage, setPermanentStylizedImage] = useState<string | null>(null);
-  
-  // При инициализации компонента, проверяем есть ли сохраненное стилизованное изображение в localStorage
-  useEffect(() => {
-    const savedImage = localStorage.getItem('stylizedImage');
-    if (savedImage) {
-      console.log("Инициализация: восстановление стилизованного изображения из localStorage");
-      setPermanentStylizedImage(savedImage);
-      
-      // Если у нас уже есть изображения, заменим первое на стилизованное
-      if (sourceImages.length > 0) {
-        const updatedImages = [...sourceImages];
-        updatedImages[0] = savedImage;
-        setSourceImages(updatedImages);
-      } else {
-        // Если у нас еще нет изображений, добавим стилизованное как первое
-        setSourceImages([savedImage]);
-      }
-    }
-  }, []);  // Пустой массив означает, что это выполнится только при монтировании компонента
-  
-  // Каждый раз, когда изменяется permanentStylizedImage, сохраняем его в localStorage
-  useEffect(() => {
-    if (permanentStylizedImage) {
-      console.log("Сохранение стилизованного изображения в localStorage");
-      localStorage.setItem('stylizedImage', permanentStylizedImage);
-    }
-  }, [permanentStylizedImage]);
-  
-  // Проверка и восстановление стилизованного изображения из локального состояния
-  useEffect(() => {
-    // Если у нас есть стилизованное изображение, но оно исчезло из sourceImages, вернем его на место
-    if (permanentStylizedImage && sourceImages.length > 0 && sourceImages[0] !== permanentStylizedImage) {
-      console.log("Восстановление стилизованного изображения из локального состояния");
-      const updatedImages = [...sourceImages];
-      updatedImages[0] = permanentStylizedImage;
-      setSourceImages(updatedImages);
-    }
-  }, [permanentStylizedImage, sourceImages]);
-  
-  // Apply AI style mutation
+  // Apply AI style mutation - ПРОСТОЕ РАДИКАЛЬНОЕ РЕШЕНИЕ
   const applyStyleMutation = useMutation({
     mutationFn: async ({ imageData, styleId }: { imageData: string; styleId: string }) => {
       console.log("Applying style:", {
         styleId, 
-        styleName: aiStyles?.find((s) => String(s.id) === styleId)?.name,
-        styleParams: aiStyles?.find((s) => String(s.id) === styleId)?.apiParams
+        styleName: aiStyles?.find(s => String(s.id) === styleId)?.name,
+        styleParams: aiStyles?.find(s => String(s.id) === styleId)?.apiParams
       });
       const response = await apiRequest("POST", "/api/apply-style", { imageData, styleId });
       return response.json();
@@ -127,11 +83,9 @@ export default function CollageCreator() {
     onSuccess: (data) => {
       // Применяем стилизованное изображение и НАВСЕГДА заменяем исходное
       if (canvasRef && data.styledImage) {
-        // 1. Сохраняем стилизованное изображение в отдельном состоянии
-        setPermanentStylizedImage(data.styledImage);
-        
-        // 2. Полностью заменяем массив sourceImages, используя новое стилизованное изображение
+        // Просто заменяем исходное изображение стилизованным
         if (sourceImages.length > 0) {
+          // Создаем новый массив и помещаем стилизованное изображение на место первого
           const updatedImages = [...sourceImages];
           updatedImages[0] = data.styledImage;
           setSourceImages(updatedImages);
@@ -171,18 +125,8 @@ export default function CollageCreator() {
           loadedCount++;
           
           if (loadedCount === totalFiles) {
-            console.log("Загрузка новых изображений, сохраняя стилизованные...");
-            // Загружаем новые изображения, но защищаем стилизованное изображение
-            setSourceImages((prev) => {
-              // Если у нас есть стилизованное изображение, то сохраняем его в начале массива
-              if (permanentStylizedImage && prev.length > 0 && prev[0] === permanentStylizedImage) {
-                console.log("Обнаружено стилизованное изображение - сохраняем его при добавлении новых");
-                return [permanentStylizedImage, ...newImages].slice(0, selectedLayout.cells);
-              } else {
-                // Иначе просто добавляем новые изображения
-                return [...prev, ...newImages].slice(0, selectedLayout.cells);
-              }
-            });
+            // Загружаем новые изображения, просто добавляя их к существующим
+            setSourceImages((prev) => [...prev, ...newImages].slice(0, selectedLayout.cells));
           }
         }
       };
@@ -325,43 +269,17 @@ export default function CollageCreator() {
   };
 
   const handleLayoutChange = (layout: typeof LAYOUTS[0]) => {
-    // Изменяем макет
+    // Просто изменяем макет
     setSelectedLayout(layout);
     
     // Обрезаем изображения, если новый макет имеет меньше ячеек
     if (sourceImages.length > layout.cells) {
-      setSourceImages((prev) => {
-        // Если у нас есть стилизованное изображение, обязательно сохраняем его
-        if (permanentStylizedImage && prev.length > 0 && prev[0] === permanentStylizedImage) {
-          console.log("Сохраняем стилизованное изображение при изменении макета");
-          // Гарантируем, что стилизованное изображение останется первым в любом случае
-          const newArray = [permanentStylizedImage];
-          // Добавляем другие изображения до указанного лимита (минус стилизованное)
-          for (let i = 1; i < layout.cells && i < prev.length; i++) {
-            newArray.push(prev[i]);
-          }
-          return newArray;
-        } else {
-          // Если нет стилизованного изображения, просто обрезаем массив
-          return prev.slice(0, layout.cells);
-        }
-      });
+      setSourceImages((prev) => prev.slice(0, layout.cells));
     }
   };
 
   const handleRemoveImage = (index: number) => {
-    // Важно! Защита от удаления стилизованного изображения
-    if (index === 0 && permanentStylizedImage) {
-      // Если пытаемся удалить стилизованное изображение - просто выводим сообщение
-      console.log("Попытка удалить стилизованное изображение - игнорируем");
-      toast({
-        title: "Нельзя удалить стилизованное изображение",
-        description: "Сначала загрузите новое изображение для замены стилизованного",
-      });
-      return;
-    }
-    
-    // Удаляем изображение по индексу
+    // Просто удаляем изображение по индексу
     setSourceImages((prev) => prev.filter((_, i) => i !== index));
   };
 
