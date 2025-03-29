@@ -84,9 +84,21 @@ export default function CollageCreator() {
     onSuccess: (data) => {
       // Apply the styled image to the canvas
       if (canvasRef && data.styledImage) {
-        // Сохраняем стилизованное изображение в состоянии
-        setStyledImage(data.styledImage);
+        // Создаем фиксированную копию стилизованного изображения
+        const styledImageData = data.styledImage;
         
+        // Сначала сохраняем стилизованное изображение в постоянном стейте
+        setStyledImage(styledImageData);
+        
+        // Затем заменяем исходные изображения (это сохранит стилизацию при перерисовке)
+        if (sourceImages.length > 0) {
+          // Создаем новый массив изображений, чтобы React обнаружил изменение
+          const updatedImages = [...sourceImages];
+          updatedImages[0] = styledImageData;
+          setSourceImages(updatedImages);
+        }
+        
+        // Затем рисуем на канвасе
         const ctx = canvasRef.getContext("2d");
         if (ctx) {
           const img = new Image();
@@ -96,14 +108,7 @@ export default function CollageCreator() {
             // Re-add text after applying style
             renderTextOnCanvas();
           };
-          img.src = data.styledImage;
-          
-          // Заменяем первое исходное изображение на стилизованное
-          if (sourceImages.length > 0) {
-            const newSourceImages = [...sourceImages];
-            newSourceImages[0] = data.styledImage;
-            setSourceImages(newSourceImages);
-          }
+          img.src = styledImageData;
         }
       }
       
@@ -139,7 +144,15 @@ export default function CollageCreator() {
           loadedCount++;
           
           if (loadedCount === totalFiles) {
-            setSourceImages((prev) => [...prev, ...newImages].slice(0, selectedLayout.cells));
+            // При добавлении новых изображений сохраняем стилизованное изображение
+            if (styledImage && sourceImages.length > 0 && sourceImages[0] === styledImage) {
+              // Стилизованное изображение останется на первой позиции
+              const updatedImages = [...sourceImages, ...newImages].slice(0, selectedLayout.cells);
+              console.log("Added new images while preserving styled image");
+              setSourceImages(updatedImages);
+            } else {
+              setSourceImages((prev) => [...prev, ...newImages].slice(0, selectedLayout.cells));
+            }
           }
         }
       };
@@ -285,14 +298,30 @@ export default function CollageCreator() {
   };
 
   const handleLayoutChange = (layout: typeof LAYOUTS[0]) => {
+    // При изменении макета, убедимся, что стилизованное изображение сохраняется
     setSelectedLayout(layout);
+    
     // Trim source images if new layout has fewer cells
     if (sourceImages.length > layout.cells) {
-      setSourceImages((prev) => prev.slice(0, layout.cells));
+      // Сохраняем стилизованное изображение, если оно есть и находится в первой позиции
+      if (styledImage && sourceImages[0] === styledImage) {
+        const trimmedImages = sourceImages.slice(0, layout.cells);
+        // Убедимся, что стилизованное изображение все еще на месте
+        setSourceImages(trimmedImages);
+        console.log("Layout changed, preserved styled image");
+      } else {
+        setSourceImages((prev) => prev.slice(0, layout.cells));
+      }
     }
   };
 
   const handleRemoveImage = (index: number) => {
+    // Если удаляется первое изображение и оно является стилизованным, сбросим стилизацию
+    if (index === 0 && styledImage && sourceImages[0] === styledImage) {
+      setStyledImage(null);
+      console.log("Styled image was removed");
+    }
+    
     setSourceImages((prev) => prev.filter((_, i) => i !== index));
   };
 

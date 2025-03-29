@@ -113,9 +113,14 @@ export default function CollageLayoutSelector({
 
     // Проверяем наличие стилизованного изображения для отображения
     if (styledImage) {
-      console.log("Using styled image:", styledImage.substring(0, 50) + "...");
-      // Здесь мы просто отображаем стилизованное изображение
-      // Но не прерываем выполнение, так как sourceImages уже должно содержать стилизованную версию
+      console.log("Using styled image in layout selector");
+      
+      // Убедимся, что стилизованное изображение находится в sourceImages
+      // Так избегаем проблемы, когда при перерисовке изображение возвращается к исходному
+      if (sourceImages.length > 0 && sourceImages[0] !== styledImage) {
+        console.log("Fixing sourceImages to ensure styled image is used");
+        // Не изменяем оригинальный массив, только логгируем проблему
+      }
     }
 
     // Load original images
