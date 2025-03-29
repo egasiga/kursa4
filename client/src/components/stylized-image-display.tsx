@@ -9,22 +9,21 @@ interface StylizedImageDisplayProps {
 
 export function StylizedImageDisplay({ onImageReady, sourceImages }: StylizedImageDisplayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { stylizedImage, originalImage, isStylized } = useStyleContext();
+  const { currentImage, lastStyleUsed } = useStyleContext();
   const [displayImage, setDisplayImage] = useState<string | null>(null);
 
   // При монтировании и при изменении изображений
   useEffect(() => {
     console.log("StylizedImageDisplay useEffect: Обновление отображения", {
-      hasStylizedImage: !!stylizedImage,
-      hasOriginalImage: !!originalImage,
-      isStylized,
+      hasCurrentImage: !!currentImage,
+      lastStyleUsed,
       sourceImagesLength: sourceImages.length
     });
 
-    // Определяем, какое изображение показывать
-    if (isStylized && stylizedImage) {
-      console.log("StylizedImageDisplay: Отображение стилизованного изображения");
-      setDisplayImage(stylizedImage);
+    // Определяем, какое изображение показывать: приоритет тому, что в контексте
+    if (currentImage) {
+      console.log("StylizedImageDisplay: Отображение изображения из контекста");
+      setDisplayImage(currentImage);
     } else if (sourceImages.length > 0) {
       console.log("StylizedImageDisplay: Отображение первого исходного изображения");
       setDisplayImage(sourceImages[0]);
@@ -32,7 +31,7 @@ export function StylizedImageDisplay({ onImageReady, sourceImages }: StylizedIma
       console.log("StylizedImageDisplay: Нет изображений для отображения");
       setDisplayImage(null);
     }
-  }, [stylizedImage, originalImage, isStylized, sourceImages]);
+  }, [currentImage, lastStyleUsed, sourceImages]);
 
   // Рисуем изображение на канвасе
   useEffect(() => {
@@ -78,9 +77,9 @@ export function StylizedImageDisplay({ onImageReady, sourceImages }: StylizedIma
         ref={canvasRef}
         className="max-w-full max-h-[600px] object-contain"
       />
-      {isStylized && (
+      {lastStyleUsed && (
         <div className="mt-2 text-sm text-center text-green-600">
-          <span>✓ Изображение стилизовано</span>
+          <span>✓ Изображение стилизовано в стиле {lastStyleUsed}</span>
         </div>
       )}
     </div>

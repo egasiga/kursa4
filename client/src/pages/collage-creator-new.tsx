@@ -30,7 +30,7 @@ const LAYOUTS = [
 export default function CollageCreatorNew() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { isStylized, originalImage, stylizedImage } = useStyleContext();
+  const { currentImage, lastStyleUsed } = useStyleContext();
   
   // Основные состояния компонента
   const [selectedLayout, setSelectedLayout] = useState(LAYOUTS[0]);
@@ -45,20 +45,16 @@ export default function CollageCreatorNew() {
   const [collageName, setCollageName] = useState("My Awesome Collage");
   const [showTextEditor, setShowTextEditor] = useState(false);
 
-  // При изменении стилизации обновляем источник изображений
+  // При изменении изображения в контексте обновляем источник изображений
   useEffect(() => {
-    if (isStylized && stylizedImage && sourceImages.length > 0) {
-      console.log("CollageCreator: Обновление источника при изменении стилизации", {isStylized});
+    if (currentImage && sourceImages.length > 0) {
+      console.log("CollageCreator: Обновление источника при изменении изображения в контексте", { lastStyleUsed });
+      // Заменяем первое изображение на текущее из контекста (которое может быть стилизованным)
       const updatedImages = [...sourceImages];
-      updatedImages[0] = stylizedImage;
-      setSourceImages(updatedImages);
-    } else if (!isStylized && originalImage && sourceImages.length > 0) {
-      console.log("CollageCreator: Возврат к оригиналу при отмене стилизации");
-      const updatedImages = [...sourceImages];
-      updatedImages[0] = originalImage;
+      updatedImages[0] = currentImage;
       setSourceImages(updatedImages);
     }
-  }, [isStylized, stylizedImage, originalImage, sourceImages]);
+  }, [currentImage, lastStyleUsed, sourceImages]);
 
   // Сохранение коллажа
   const saveMutation = useMutation({

@@ -1,122 +1,93 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
 /**
- * Интерфейс для контекста стилизации
+ * Интерфейс для контекста стилизации - упрощенная версия с необратимой стилизацией
  */
 interface StyleContextType {
-  stylizedImage: string | null;
-  setStylizedImage: (image: string | null) => void;
-  originalImage: string | null;
-  setOriginalImage: (image: string | null) => void;
-  persistImage: (stylized: string, original: string) => void;
-  resetStylizedImage: () => void;
-  isStylized: boolean;
+  currentImage: string | null;
+  setCurrentImage: (image: string | null) => void;
+  applyStyle: (styledImage: string) => void; // Необратимо заменяет текущее изображение
+  lastStyleUsed: string | null;
+  setLastStyleUsed: (styleName: string | null) => void;
 }
 
 // Создаем контекст с начальным состоянием
 const StyleContext = createContext<StyleContextType>({
-  stylizedImage: null,
-  setStylizedImage: () => {},
-  originalImage: null, 
-  setOriginalImage: () => {},
-  persistImage: () => {},
-  resetStylizedImage: () => {},
-  isStylized: false,
+  currentImage: null,
+  setCurrentImage: () => {},
+  applyStyle: () => {},
+  lastStyleUsed: null,
+  setLastStyleUsed: () => {},
 });
 
 /**
  * Провайдер контекста стилизации
  */
 export const StyleProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Состояние для хранения стилизованного изображения
-  const [stylizedImage, setStylizedImage] = useState<string | null>(null);
-  // Состояние для хранения оригинального изображения
-  const [originalImage, setOriginalImage] = useState<string | null>(null);
-  // Флаг стилизации
-  const [isStylized, setIsStylized] = useState<boolean>(false);
+  // Состояние для хранения текущего изображения (оно может быть уже стилизованным)
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
+  // Состояние для хранения информации о последнем примененном стиле
+  const [lastStyleUsed, setLastStyleUsed] = useState<string | null>(null);
 
   // При монтировании компонента пытаемся восстановить состояние из localStorage
   useEffect(() => {
     try {
-      const savedStylizedImage = localStorage.getItem('stylizedImage');
-      const savedOriginalImage = localStorage.getItem('originalImage');
-      const savedIsStylized = localStorage.getItem('isStylized');
+      const savedCurrentImage = localStorage.getItem('currentImage');
+      const savedLastStyleUsed = localStorage.getItem('lastStyleUsed');
       
-      if (savedStylizedImage) setStylizedImage(savedStylizedImage);
-      if (savedOriginalImage) setOriginalImage(savedOriginalImage);
-      if (savedIsStylized) setIsStylized(savedIsStylized === 'true');
+      if (savedCurrentImage) setCurrentImage(savedCurrentImage);
+      if (savedLastStyleUsed) setLastStyleUsed(savedLastStyleUsed);
       
-      console.log("StyleContext: Изображения восстановлены из localStorage", {
-        hasStylized: !!savedStylizedImage,
-        hasOriginal: !!savedOriginalImage,
-        isStylized: savedIsStylized
+      console.log("StyleContext: Изображение восстановлено из localStorage", {
+        hasCurrentImage: !!savedCurrentImage,
+        lastStyleUsed: savedLastStyleUsed
       });
     } catch (error) {
       console.error("StyleContext: Ошибка восстановления данных из localStorage", error);
     }
   }, []);
 
-  // Сохраняем стилизованное изображение в localStorage при изменении
+  // Сохраняем текущее изображение в localStorage при изменении
   useEffect(() => {
     try {
-      if (stylizedImage) {
-        localStorage.setItem('stylizedImage', stylizedImage);
-        console.log("StyleContext: Стилизованное изображение сохранено в localStorage");
+      if (currentImage) {
+        localStorage.setItem('currentImage', currentImage);
+        console.log("StyleContext: Текущее изображение сохранено в localStorage");
       }
     } catch (error) {
-      console.error("StyleContext: Ошибка сохранения стилизованного изображения", error);
+      console.error("StyleContext: Ошибка сохранения текущего изображения", error);
     }
-  }, [stylizedImage]);
+  }, [currentImage]);
 
-  // Сохраняем оригинальное изображение в localStorage при изменении
+  // Сохраняем информацию о последнем стиле в localStorage при изменении
   useEffect(() => {
     try {
-      if (originalImage) {
-        localStorage.setItem('originalImage', originalImage);
-        console.log("StyleContext: Оригинальное изображение сохранено в localStorage");
+      if (lastStyleUsed) {
+        localStorage.setItem('lastStyleUsed', lastStyleUsed);
+        console.log("StyleContext: Информация о последнем стиле сохранена:", lastStyleUsed);
       }
     } catch (error) {
-      console.error("StyleContext: Ошибка сохранения оригинального изображения", error);
+      console.error("StyleContext: Ошибка сохранения информации о стиле", error);
     }
-  }, [originalImage]);
-
-  // Сохраняем флаг стилизации в localStorage при изменении
-  useEffect(() => {
-    try {
-      localStorage.setItem('isStylized', String(isStylized));
-      console.log("StyleContext: Сохранен флаг стилизации:", isStylized);
-    } catch (error) {
-      console.error("StyleContext: Ошибка сохранения флага стилизации", error);
-    }
-  }, [isStylized]);
+  }, [lastStyleUsed]);
 
   /**
-   * Сохраняет пару изображений (стилизованное + оригинальное)
+   * Необратимо применяет стиль к изображению
+   * @param styledImage стилизованное изображение в формате base64
    */
-  const persistImage = (stylized: string, original: string) => {
-    console.log("StyleContext: Сохранение пары изображений (стилизованное + оригинальное)");
-    setStylizedImage(stylized);
-    setOriginalImage(original);
-    setIsStylized(true);
-  };
-
-  /**
-   * Сбрасывает стилизацию и возвращает оригинальное изображение
-   */
-  const resetStylizedImage = () => {
-    console.log("StyleContext: Сброс стилизации");
-    setIsStylized(false);
+  const applyStyle = (styledImage: string) => {
+    console.log("StyleContext: Необратимое применение стиля");
+    // Заменяем текущее изображение стилизованным без сохранения оригинала
+    setCurrentImage(styledImage);
   };
 
   // Значение контекста, которое будет доступно потребителям
   const contextValue: StyleContextType = {
-    stylizedImage,
-    setStylizedImage,
-    originalImage,
-    setOriginalImage,
-    persistImage,
-    resetStylizedImage,
-    isStylized,
+    currentImage,
+    setCurrentImage,
+    applyStyle,
+    lastStyleUsed,
+    setLastStyleUsed,
   };
 
   return (

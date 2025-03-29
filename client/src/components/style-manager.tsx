@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Wand2 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useStyleContext } from "@/context/StyleContext";
 
 interface StyleManagerProps {
   canvasRef: HTMLCanvasElement | null;
@@ -14,6 +15,7 @@ interface StyleManagerProps {
 export function StyleManager({ canvasRef, disableControls = false }: StyleManagerProps) {
   const [selectedStyle, setSelectedStyle] = useState<string>("none");
   const { toast } = useToast();
+  const { applyStyle, setLastStyleUsed } = useStyleContext();
 
   // Загружаем доступные стили
   const { data: aiStyles } = useQuery<{ id: number; name: string; description: string | null; previewUrl: string | null; apiParams: unknown }[]>({
@@ -23,15 +25,17 @@ export function StyleManager({ canvasRef, disableControls = false }: StyleManage
   // Мутация для применения стиля
   const applyStyleMutation = useMutation({
     mutationFn: async ({ imageData, styleId }: { imageData: string; styleId: string }) => {
-      console.log("StyleManager: Применение стиля:", {
-        styleId, 
-        styleName: aiStyles?.find((s) => String(s.id) === styleId)?.name
-      });
+      const styleName = aiStyles?.find((s) => String(s.id) === styleId)?.name;
+      console.log("StyleManager: Применение стиля:", { styleId, styleName });
+      
       const response = await apiRequest("POST", "/api/apply-style", { imageData, styleId });
       return response.json();
     },
     onSuccess: (data, variables) => {
       if (data.styledImage && canvasRef) {
+        // Получаем название стиля для отображения
+        const styleName = aiStyles?.find((s) => String(s.id) === variables.styleId)?.name || 'неизвестный стиль';
+        
         // НЕОБРАТИМО заменяем изображение в канвасе на стилизованное
         const img = new Image();
         img.crossOrigin = "anonymous";
@@ -44,10 +48,15 @@ export function StyleManager({ canvasRef, disableControls = false }: StyleManage
             // Рисуем новое стилизованное изображение на канвасе
             ctx.drawImage(img, 0, 0, canvasRef.width, canvasRef.height);
             
-            // ВАЖНО: НЕ сохраняем оригинальное изображение, работаем только со стилизованным
+            // Сохраняем стилизованное изображение в контексте (необратимо)
+            applyStyle(data.styledImage);
+            
+            // Запоминаем последний примененный стиль
+            setLastStyleUsed(styleName);
+            
             toast({
               title: "Стиль применен",
-              description: `Изображение стилизовано в стиле ${aiStyles?.find((s) => String(s.id) === variables.styleId)?.name}`,
+              description: `Изображение стилизовано в стиле ${styleName}. Это изменение необратимо.`,
             });
           }
         };
@@ -70,8 +79,6 @@ export function StyleManager({ canvasRef, disableControls = false }: StyleManage
     const imageData = canvasRef.toDataURL("image/png");
     applyStyleMutation.mutate({ imageData, styleId: selectedStyle });
   };
-
-  // Больше не используем обработчик сброса стилизации - изменения необратимы
 
   return (
     <div className="space-y-4">
@@ -105,6 +112,10 @@ export function StyleManager({ canvasRef, disableControls = false }: StyleManage
         <Wand2 className="w-4 h-4" />
         {applyStyleMutation.isPending ? "Применение..." : "Применить стиль"}
       </Button>
+      
+      <div className="text-xs text-gray-500 italic mt-2">
+        Примечание: Применение стиля - необратимая операция. После стилизации вы не сможете вернуться к исходному изображению.
+      </div>
     </div>
   );
 }
