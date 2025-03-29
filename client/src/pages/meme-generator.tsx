@@ -16,6 +16,7 @@ import SocialShare from "@/components/social-share";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Download, Wand2, Save, Share2, RotateCcw } from "lucide-react";
 import { MemeTemplate, SavedMeme } from "@shared/schema";
+import { useStyleContext } from "@/context/StyleContext";
 
 export default function MemeGenerator() {
   const { id } = useParams();
@@ -45,7 +46,7 @@ export default function MemeGenerator() {
   });
 
   // Fetch AI styles
-  const { data: aiStyles } = useQuery({
+  const { data: aiStyles } = useQuery<{ id: number; name: string; description: string | null; previewUrl: string | null; apiParams: unknown }[]>({
     queryKey: ["/api/styles"],
   });
 
@@ -71,21 +72,38 @@ export default function MemeGenerator() {
     },
   });
 
+  // Получаем доступ к контексту стилизации
+  const { applyStyle, setLastStyleUsed } = useStyleContext();
+
   // Apply AI style mutation
   const applyStyleMutation = useMutation({
     mutationFn: async ({ image, styleParams }: { image: string; styleParams: any }) => {
       const response = await apiRequest("POST", "/api/apply-style", { image, styleParams });
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       // Apply the styled image to the canvas
       if (canvasRef && data.styledImage) {
         const ctx = canvasRef.getContext("2d");
         if (ctx) {
           const img = new Image();
           img.onload = () => {
+            // Очищаем канвас
             ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
+            
+            // Рисуем новое стилизованное изображение на канвасе
             ctx.drawImage(img, 0, 0, canvasRef.width, canvasRef.height);
+            
+            // Находим имя примененного стиля
+            const styleName = aiStyles?.find(style => 
+              style.apiParams && 
+              style.apiParams.aiModel === variables.styleParams.aiModel
+            )?.name || 'custom style';
+            
+            // НЕОБРАТИМО сохраняем стилизованное изображение в глобальном контексте
+            applyStyle(data.styledImage);
+            setLastStyleUsed(styleName);
+            
             // Re-add text after applying style
             renderTextOnCanvas();
           };
@@ -94,8 +112,8 @@ export default function MemeGenerator() {
       }
       
       toast({
-        title: "AI style applied",
-        description: "Your meme has been transformed with AI styling.",
+        title: "Стиль применен необратимо",
+        description: "Ваш мем преобразован с помощью AI-стилизации. Это изменение необратимо.",
       });
     },
     onError: (error) => {
