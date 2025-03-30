@@ -10,10 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CollageLayoutSelector from "@/components/collage-layout-selector";
 import TextEditor from "@/components/text-editor";
-import AiStyleSelector from "@/components/ai-style-selector";
 import SocialShare from "@/components/social-share";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Wand2, Save, Share2, Upload, RotateCcw, Plus } from "lucide-react";
+import { Download, Save, Share2, Upload, RotateCcw, Plus } from "lucide-react";
 import { Collage } from "@shared/schema";
 
 const LAYOUTS = [
@@ -30,7 +29,7 @@ export default function CollageCreator() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [selectedLayout, setSelectedLayout] = useState(LAYOUTS[0]);
-  const [selectedAiStyle, setSelectedAiStyle] = useState<string>("none");
+  // AI styling functionality has been removed
   const [textContent, setTextContent] = useState<{ id: string; text: string; style: any; position: { x: number; y: number } }[]>([]);
   const [sourceImages, setSourceImages] = useState<string[]>([]);
   const [filters, setFilters] = useState({
@@ -42,10 +41,7 @@ export default function CollageCreator() {
   const [collageName, setCollageName] = useState("My Awesome Collage");
   const [showTextEditor, setShowTextEditor] = useState(false);
 
-  // Fetch AI styles
-  const { data: aiStyles } = useQuery({
-    queryKey: ["/api/styles"],
-  });
+  // AI styling functionality has been removed
 
   // Save collage mutation
   const saveMutation = useMutation({
@@ -69,43 +65,7 @@ export default function CollageCreator() {
     },
   });
 
-  // Apply AI style mutation - ПРОСТОЕ РАДИКАЛЬНОЕ РЕШЕНИЕ
-  const applyStyleMutation = useMutation({
-    mutationFn: async ({ imageData, styleId }: { imageData: string; styleId: string }) => {
-      console.log("Applying style:", {
-        styleId, 
-        styleName: aiStyles && Array.isArray(aiStyles) ? aiStyles.find(s => String(s.id) === styleId)?.name : 'unknown',
-        styleParams: aiStyles && Array.isArray(aiStyles) ? aiStyles.find(s => String(s.id) === styleId)?.apiParams : {}
-      });
-      const response = await apiRequest("POST", "/api/apply-style", { imageData, styleId });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      // Применяем стилизованное изображение и НАВСЕГДА заменяем исходное
-      if (canvasRef && data.styledImage) {
-        // Просто заменяем исходное изображение стилизованным
-        if (sourceImages.length > 0) {
-          // Создаем новый массив и помещаем стилизованное изображение на место первого
-          const updatedImages = [...sourceImages];
-          updatedImages[0] = data.styledImage;
-          setSourceImages(updatedImages);
-          
-          // Оповещаем пользователя
-          toast({
-            title: "AI style applied",
-            description: "Your image has been transformed with AI styling.",
-          });
-        }
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to apply AI style",
-        description: String(error),
-        variant: "destructive",
-      });
-    },
-  });
+  // AI styling functionality has been removed
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -220,12 +180,7 @@ export default function CollageCreator() {
     });
   };
 
-  const handleApplyAiStyle = () => {
-    if (!canvasRef || selectedAiStyle === "none") return;
-    
-    const imageData = canvasRef.toDataURL("image/png");
-    applyStyleMutation.mutate({ imageData, styleId: selectedAiStyle });
-  };
+  // AI styling functionality has been removed
 
   const handleSaveCollage = () => {
     if (!canvasRef) return;
@@ -240,7 +195,7 @@ export default function CollageCreator() {
       sourceImages,
       textContent,
       appliedFilters: [filters],
-      aiStyle: selectedAiStyle,
+      aiStyle: null, // AI styling functionality has been removed
     };
     
     saveMutation.mutate(collageData);
@@ -343,15 +298,7 @@ export default function CollageCreator() {
               <Download className="w-4 h-4" />
               Download
             </Button>
-            <Button
-              variant="secondary"
-              onClick={handleApplyAiStyle}
-              disabled={sourceImages.length === 0 || selectedAiStyle === "none" || applyStyleMutation.isPending}
-              className="gap-2"
-            >
-              <Wand2 className="w-4 h-4" />
-              Apply AI Style
-            </Button>
+            {/* AI styling functionality has been removed */}
             <SocialShare canvasRef={canvasRef} />
           </div>
         </div>
@@ -397,15 +344,12 @@ export default function CollageCreator() {
           <Card>
             <CardContent className="p-0">
               <Tabs defaultValue={showTextEditor ? "text" : "filters"}>
-                <TabsList className="w-full grid grid-cols-3">
+                <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="text" onClick={() => setShowTextEditor(true)}>
                     Text
                   </TabsTrigger>
                   <TabsTrigger value="filters" onClick={() => setShowTextEditor(false)}>
                     Filters
-                  </TabsTrigger>
-                  <TabsTrigger value="ai" onClick={() => setShowTextEditor(false)}>
-                    AI Style
                   </TabsTrigger>
                 </TabsList>
                 <div className="p-6">
@@ -482,13 +426,7 @@ export default function CollageCreator() {
                       </div>
                     </div>
                   </TabsContent>
-                  <TabsContent value="ai" className="m-0">
-                    <AiStyleSelector
-                      styles={Array.isArray(aiStyles) ? aiStyles : []}
-                      selectedStyle={selectedAiStyle}
-                      onChange={setSelectedAiStyle}
-                    />
-                  </TabsContent>
+                  {/* AI styling functionality has been removed */}
                 </div>
               </Tabs>
             </CardContent>
@@ -501,7 +439,7 @@ export default function CollageCreator() {
                 <li>Choose a collage layout</li>
                 <li>Upload images for each cell in the layout</li>
                 <li>Add text captions if needed</li>
-                <li>Apply filters or AI styles to enhance your collage</li>
+                <li>Apply filters to enhance your collage</li>
                 <li>Save or download your creation</li>
               </ol>
             </CardContent>

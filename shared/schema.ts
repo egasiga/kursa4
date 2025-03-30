@@ -67,19 +67,7 @@ export const insertCollageSchema = createInsertSchema(collages).omit({
   createdAt: true,
 });
 
-// AI Styles table
-export const aiStyles = pgTable("ai_styles", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  description: text("description"),
-  previewUrl: text("preview_url"),
-  apiParams: json("api_params").default({}), // Parameters to send to AI API
-  source: text("source").default("magenta"), // Source of the style (e.g., "magenta", "sharp", "huggingface")
-});
 
-export const insertAiStyleSchema = createInsertSchema(aiStyles).omit({
-  id: true,
-});
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -94,5 +82,4 @@ export type InsertSavedMeme = z.infer<typeof insertSavedMemeSchema>;
 export type Collage = typeof collages.$inferSelect;
 export type InsertCollage = z.infer<typeof insertCollageSchema>;
 
-export type AiStyle = typeof aiStyles.$inferSelect;
-export type InsertAiStyle = z.infer<typeof insertAiStyleSchema>;
+

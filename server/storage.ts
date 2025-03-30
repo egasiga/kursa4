@@ -2,8 +2,7 @@ import {
   users, type User, type InsertUser,
   memeTemplates, type MemeTemplate, type InsertMemeTemplate,
   savedMemes, type SavedMeme, type InsertSavedMeme,
-  collages, type Collage, type InsertCollage,
-  aiStyles, type AiStyle, type InsertAiStyle
+  collages, type Collage, type InsertCollage
 } from "@shared/schema";
 
 export interface IStorage {
@@ -33,11 +32,6 @@ export interface IStorage {
   createCollage(collage: InsertCollage): Promise<Collage>;
   updateCollage(id: number, collage: Partial<InsertCollage>): Promise<Collage | undefined>;
   deleteCollage(id: number): Promise<boolean>;
-
-  // AI Style operations
-  getAiStyles(): Promise<AiStyle[]>;
-  getAiStyle(id: number): Promise<AiStyle | undefined>;
-  createAiStyle(style: InsertAiStyle): Promise<AiStyle>;
 }
 
 export class MemStorage implements IStorage {
@@ -45,93 +39,25 @@ export class MemStorage implements IStorage {
   private memeTemplates: Map<number, MemeTemplate>;
   private savedMemes: Map<number, SavedMeme>;
   private collages: Map<number, Collage>;
-  private aiStyles: Map<number, AiStyle>;
   
   private userIdCounter: number;
   private templateIdCounter: number;
   private memeIdCounter: number;
   private collageIdCounter: number;
-  private styleIdCounter: number;
 
   constructor() {
     this.users = new Map();
     this.memeTemplates = new Map();
     this.savedMemes = new Map();
     this.collages = new Map();
-    this.aiStyles = new Map();
     
     this.userIdCounter = 1;
     this.templateIdCounter = 1;
     this.memeIdCounter = 1;
     this.collageIdCounter = 1;
-    this.styleIdCounter = 1;
-
-    // Add default AI styles
-    this.initializeAiStyles();
     
     // Add default meme templates
     this.initializeMemeTemplates();
-  }
-
-  private initializeAiStyles() {
-    const defaultStyles: InsertAiStyle[] = [
-      {
-        name: "Масляная живопись",
-        description: "Преобразуйте изображение в стиле масляной живописи",
-        previewUrl: "/api/styles/preview/oil-painting",
-        apiParams: { 
-          aiModel: "Масляная живопись",
-          styleIntensity: 1.2
-        }
-      },
-      {
-        name: "Набросок карандашом",
-        description: "Преобразуйте изображение в черно-белый набросок карандашом",
-        previewUrl: "/api/styles/preview/pencil-sketch",
-        apiParams: { 
-          aiModel: "Контурный рисунок",
-          styleIntensity: 1.0
-        }
-      },
-      {
-        name: "Акварель",
-        description: "Преобразуйте изображение в стиле акварельной живописи",
-        previewUrl: "/api/styles/preview/watercolor",
-        apiParams: { 
-          aiModel: "Акварель",
-          styleIntensity: 1.2
-        }
-      },
-      {
-        name: "Тушь",
-        description: "Преобразуйте изображение в стиле рисунка тушью",
-        previewUrl: "/api/styles/preview/ink",
-        apiParams: { 
-          aiModel: "Контурный рисунок",
-          styleIntensity: 1.5
-        }
-      },
-      {
-        name: "Винтаж",
-        description: "Преобразуйте изображение в стиле старой фотографии",
-        previewUrl: "/api/styles/preview/vintage",
-        apiParams: { 
-          aiModel: "Винтаж",
-          styleIntensity: 1.2
-        }
-      },
-      {
-        name: "Пиксель-арт",
-        description: "Преобразуйте изображение в стиле пиксельной графики",
-        previewUrl: "/api/styles/preview/pixel-art",
-        apiParams: { 
-          aiModel: "Пиксель-арт",
-          styleIntensity: 1.0
-        }
-      }
-    ];
-
-    defaultStyles.forEach(style => this.createAiStyle(style));
   }
 
   private initializeMemeTemplates() {
@@ -350,21 +276,7 @@ export class MemStorage implements IStorage {
     return this.collages.delete(id);
   }
 
-  // AI Style operations
-  async getAiStyles(): Promise<AiStyle[]> {
-    return Array.from(this.aiStyles.values());
-  }
 
-  async getAiStyle(id: number): Promise<AiStyle | undefined> {
-    return this.aiStyles.get(id);
-  }
-
-  async createAiStyle(style: InsertAiStyle): Promise<AiStyle> {
-    const id = this.styleIdCounter++;
-    const newStyle: AiStyle = { ...style, id };
-    this.aiStyles.set(id, newStyle);
-    return newStyle;
-  }
 }
 
 export const storage = new MemStorage();

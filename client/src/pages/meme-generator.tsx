@@ -11,10 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TextEditor from "@/components/text-editor";
 import ImageEditor from "@/components/image-editor";
-import AiStyleSelector from "@/components/ai-style-selector";
 import SocialShare from "@/components/social-share";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Wand2, Save, Share2, RotateCcw } from "lucide-react";
+import { Download, Save, Share2, RotateCcw } from "lucide-react";
 import { MemeTemplate, SavedMeme } from "@shared/schema";
 
 export default function MemeGenerator() {
@@ -23,7 +22,7 @@ export default function MemeGenerator() {
   const { toast } = useToast();
   
   const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(null);
-  const [selectedAiStyle, setSelectedAiStyle] = useState<string>("none");
+
   const [textContent, setTextContent] = useState<{ areaIndex: number; text: string; style: any }[]>([]);
   const [filters, setFilters] = useState({
     brightness: 100,
@@ -44,10 +43,7 @@ export default function MemeGenerator() {
     enabled: !!id,
   });
 
-  // Fetch AI styles
-  const { data: aiStyles } = useQuery({
-    queryKey: ["/api/styles"],
-  });
+
 
   // Save meme mutation
   const saveMutation = useMutation({
@@ -71,58 +67,7 @@ export default function MemeGenerator() {
     },
   });
 
-  // Apply AI style mutation
-  const applyStyleMutation = useMutation({
-    mutationFn: async ({ image, styleParams }: { image: string; styleParams: any }) => {
-      const response = await apiRequest("POST", "/api/apply-style", { image, styleParams });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to apply style');
-      return data;
-    },
-    onSuccess: (data) => {
-      if (!canvasRef || !data.styledImage) return;
-      
-      const ctx = canvasRef.getContext("2d");
-      if (!ctx) return;
 
-      const img = new Image();
-      let loaded = false;
-
-      img.onload = () => {
-        if (loaded) return; // Prevent double rendering
-        loaded = true;
-        
-        ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
-        ctx.drawImage(img, 0, 0, canvasRef.width, canvasRef.height);
-        
-        // Store the styled image data
-        const imageData = ctx.getImageData(0, 0, canvasRef.width, canvasRef.height);
-        ctx.putImageData(imageData, 0, 0);
-        
-        // Save the styled image permanently
-        const styledImageBase64 = canvasRef.toDataURL('image/png');
-        localStorage.setItem('lastStyledImage', styledImageBase64);
-        localStorage.setItem('lastAppliedStyle', JSON.stringify(style));
-        
-        // Re-add text after applying style
-        renderTextOnCanvas();
-      };
-
-      img.src = data.styledImage;
-      
-      toast({
-        title: "AI style applied",
-        description: "Your meme has been transformed with AI styling.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to apply AI style",
-        description: String(error),
-        variant: "destructive",
-      });
-    },
-  });
 
   useEffect(() => {
     // When template data is loaded, set it as the selected template
@@ -259,44 +204,7 @@ export default function MemeGenerator() {
     });
   };
 
-  const handleApplyAiStyle = async () => {
-    if (!canvasRef || selectedAiStyle === "none") return;
-    
-    // Получаем выбранный стиль из списка доступных стилей
-    const selectedStyle = Array.isArray(aiStyles) ? aiStyles.find(style => String(style.id) === selectedAiStyle) : undefined;
-    if (!selectedStyle) {
-      toast({
-        title: "Стиль не найден",
-        description: "Выбранный стиль AI не найден в списке доступных стилей.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Получаем изображение из канваса
-    const image = canvasRef.toDataURL("image/png");
-    
-    // Определяем параметры стиля на основе его типа
-    const styleParams = {
-      aiModel: selectedStyle.name,
-      styleIntensity: 1.0,
-      transformType: "image-to-image",
-      styleReference: selectedStyle.description || "general",
-      ...selectedStyle.apiParams
-    };
-    
-    console.log("Applying style:", {
-      styleId: selectedAiStyle,
-      styleName: selectedStyle.name,
-      styleParams
-    });
-    
-    // Вызываем мутацию с правильными параметрами
-    applyStyleMutation.mutate({ 
-      image, 
-      styleParams 
-    });
-  };
+
 
   const handleSaveMeme = () => {
     if (!canvasRef || !selectedTemplate) return;
@@ -309,8 +217,7 @@ export default function MemeGenerator() {
       templateId: selectedTemplate.id,
       userId: 1, // For now, use a default user ID
       textContent,
-      appliedFilters: [filters],
-      aiStyle: selectedAiStyle,
+      appliedFilters: [filters]
     };
     
     saveMutation.mutate(memeData);
@@ -426,15 +333,7 @@ export default function MemeGenerator() {
                 <Download className="w-4 h-4" />
                 Download
               </Button>
-              <Button
-                variant="secondary"
-                onClick={handleApplyAiStyle}
-                disabled={!selectedTemplate || selectedAiStyle === "none" || applyStyleMutation.isPending}
-                className="gap-2"
-              >
-                <Wand2 className="w-4 h-4" />
-                Apply AI Style
-              </Button>
+
               <SocialShare canvasRef={canvasRef} />
             </div>
           )}
@@ -462,10 +361,9 @@ export default function MemeGenerator() {
               <Card>
                 <CardContent className="p-0">
                   <Tabs defaultValue="text">
-                    <TabsList className="w-full grid grid-cols-3">
+                    <TabsList className="w-full grid grid-cols-2">
                       <TabsTrigger value="text">Text</TabsTrigger>
                       <TabsTrigger value="filters">Filters</TabsTrigger>
-                      <TabsTrigger value="ai">AI Style</TabsTrigger>
                     </TabsList>
                     <div className="p-6">
                       <TabsContent value="text" className="m-0">
@@ -530,13 +428,7 @@ export default function MemeGenerator() {
                           </div>
                         </div>
                       </TabsContent>
-                      <TabsContent value="ai" className="m-0">
-                        <AiStyleSelector
-                          styles={Array.isArray(aiStyles) ? aiStyles : []}
-                          selectedStyle={selectedAiStyle}
-                          onChange={setSelectedAiStyle}
-                        />
-                      </TabsContent>
+
                     </div>
                   </Tabs>
                 </CardContent>
@@ -552,7 +444,7 @@ export default function MemeGenerator() {
                   <li>Select a meme template from the gallery</li>
                   <li>Add your custom text to the template</li>
                   <li>Customize text style, colors, and positioning</li>
-                  <li>Apply filters or AI styles to enhance your meme</li>
+                  <li>Apply filters to enhance your meme</li>
                   <li>Save or download your creation</li>
                 </ol>
                 <Button
