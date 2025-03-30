@@ -4,6 +4,9 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { insertMemeTemplateSchema, insertSavedMemeSchema, insertCollageSchema } from "@shared/schema";
 import sharp from 'sharp';
+import { execSync, spawn } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use((req, res, next) => {
@@ -263,6 +266,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting collage:", error);
       res.status(500).json({ message: "Failed to delete collage", error: String(error) });
+    }
+  });
+
+  // Создаем директорию для временных файлов, если её нет
+  if (!fs.existsSync('./temp')) {
+    fs.mkdirSync('./temp', { recursive: true });
+  }
+
+  // Маршрут для получения доступных стилей
+  app.get("/api/styles", (req: Request, res: Response) => {
+    try {
+      // Возвращаем список предопределенных стилей
+      // Клиент будет использовать placeholder-styles.ts для отображения
+      const styles = [
+        {
+          id: 'style1',
+          name: 'Звёздная ночь (Ван Гог)',
+          imageUrl: ''
+        },
+        {
+          id: 'style2',
+          name: 'Крик (Мунк)',
+          imageUrl: ''
+        },
+        {
+          id: 'style3',
+          name: 'Композиция (Кандинский)',
+          imageUrl: ''
+        },
+        {
+          id: 'style4',
+          name: 'Кубизм (Пикассо)',
+          imageUrl: ''
+        },
+        {
+          id: 'style5',
+          name: 'Водяные лилии (Моне)',
+          imageUrl: ''
+        }
+      ];
+      res.json(styles);
+    } catch (error) {
+      console.error("Error fetching styles:", error);
+      res.status(500).json({ message: "Failed to fetch styles", error: String(error) });
+    }
+  });
+
+  // Маршрут для стилизации изображения
+  app.post("/api/stylize", async (req: Request, res: Response) => {
+    try {
+      const { image, styleId } = req.body;
+      
+      if (!image) {
+        return res.status(400).json({ message: "Image is required" });
+      }
+      
+      if (!styleId) {
+        return res.status(400).json({ message: "Style ID is required" });
+      }
+
+      // Генерируем временные имена файлов
+      const timestamp = Date.now();
+      const contentPath = `./temp/content_${timestamp}.jpg`;
+      const stylePath = `./styles/${styleId.replace('style', '')}.jpg`;
+      const outputPath = `./temp/stylized_${timestamp}.jpg`;
+      
+      // Сохраняем исходное изображение
+      const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+      fs.writeFileSync(contentPath, Buffer.from(base64Data, 'base64'));
+      
+      // Запускаем Python скрипт для обработки изображения
+      try {
+        const pythonProcess = spawn('python', [
+          'server/stylization.py',
+          contentPath,
+          stylePath,
+          outputPath
+        ]);
+        
+        let pythonError = '';
+        
+        pythonProcess.stderr.on('data', (data) => {
+          pythonError += data.toString();
+          console.error(`Python error: ${data}`);
+        });
+        
+        // Ждем завершения выполнения скрипта
+        await new Promise<void>((resolve, reject) => {
+          pythonProcess.on('close', (code) => {
+            if (code !== 0) {
+              console.error(`Python process exited with code ${code}`);
+              console.error(`Error: ${pythonError}`);
+              reject(new Error(`Python process failed with code ${code}: ${pythonError}`));
+            } else {
+              resolve();
+            }
+          });
+        });
+      } catch (error) {
+        console.error('Error executing Python script:', error);
+        
+        // Если стилизация не удалась, возвращаем оригинальное изображение
+        fs.copyFileSync(contentPath, outputPath);
+      }
+      
+      // Чтение стилизованного изображения и отправка в ответе
+      if (!fs.existsSync(outputPath)) {
+        return res.status(500).json({ message: "Failed to create stylized image" });
+      }
+      
+      const stylizedImage = fs.readFileSync(outputPath);
+      const stylizedBase64 = `data:image/jpeg;base64,${stylizedImage.toString('base64')}`;
+      
+      res.json({
+        originalImage: image,
+        styledImageUrl: stylizedBase64,
+        timestamp
+      });
+    } catch (error) {
+      console.error("Error stylizing image:", error);
+      res.status(500).json({ message: "Failed to stylize image", error: String(error) });
+    }
+  });
+
+  // Маршрут для удаления временных файлов
+  app.delete("/api/stylize/:timestamp", (req: Request, res: Response) => {
+    try {
+      const timestamp = req.params.timestamp;
+      const contentPath = `./temp/content_${timestamp}.jpg`;
+      const stylizedPath = `./temp/stylized_${timestamp}.jpg`;
+      
+      // Удаляем временные файлы, если они существуют
+      if (fs.existsSync(contentPath)) {
+        fs.unlinkSync(contentPath);
+      }
+      
+      if (fs.existsSync(stylizedPath)) {
+        fs.unlinkSync(stylizedPath);
+      }
+      
+      res.json({ message: "Temporary files deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting temporary files:", error);
+      res.status(500).json({ message: "Failed to delete temporary files", error: String(error) });
     }
   });
 

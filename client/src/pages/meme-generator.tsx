@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TextEditor from "@/components/text-editor";
 import ImageEditor from "@/components/image-editor";
 import SocialShare from "@/components/social-share";
+import AiStyleSelector, { AiStyle } from "@/components/ai-style-selector";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Download, Save, Share2, RotateCcw } from "lucide-react";
 import { MemeTemplate, SavedMeme } from "@shared/schema";
@@ -31,6 +32,12 @@ export default function MemeGenerator() {
   });
   const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement | null>(null);
   const [memeName, setMemeName] = useState("My Awesome Meme");
+  
+  // Состояния для стилизации
+  const [selectedStyle, setSelectedStyle] = useState<AiStyle | undefined>(undefined);
+  const [isStyleApplied, setIsStyleApplied] = useState(false);
+  const [isStyleLoading, setIsStyleLoading] = useState(false);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
 
   // Fetch templates
   const { data: templates, isLoading: isLoadingTemplates } = useQuery({
@@ -75,9 +82,10 @@ export default function MemeGenerator() {
       setSelectedTemplate(templateData);
       
       // Initialize text content from template's text areas
-      if (templateData.textAreas && Array.isArray(templateData.textAreas)) {
+      const textAreas = templateData.textAreas as any[] || [];
+      if (Array.isArray(textAreas)) {
         setTextContent(
-          templateData.textAreas.map((area: any, index: number) => ({
+          textAreas.map((area: any, index: number) => ({
             areaIndex: index,
             text: area.defaultText || "",
             style: {
@@ -175,7 +183,8 @@ export default function MemeGenerator() {
     if (!ctx) return;
     
     textContent.forEach((item) => {
-      const textArea = selectedTemplate.textAreas[item.areaIndex];
+      const textAreas = selectedTemplate.textAreas as any[] || [];
+      const textArea = textAreas[item.areaIndex];
       if (!textArea) return;
       
       ctx.font = `${item.style.fontSize}px ${item.style.fontFamily}`;
@@ -217,7 +226,8 @@ export default function MemeGenerator() {
       templateId: selectedTemplate.id,
       userId: 1, // For now, use a default user ID
       textContent,
-      appliedFilters: [filters]
+      appliedFilters: [filters],
+      aiStyle: isStyleApplied && selectedStyle ? selectedStyle.id : "none"
     };
     
     saveMutation.mutate(memeData);
@@ -239,8 +249,9 @@ export default function MemeGenerator() {
 
   const handleTemplateSelect = (template: MemeTemplate) => {
     setSelectedTemplate(template);
+    const textAreas = template.textAreas as any[] || [];
     setTextContent(
-      template.textAreas.map((area: any, index: number) => ({
+      textAreas.map((area: any, index: number) => ({
         areaIndex: index,
         text: area.defaultText || "",
         style: {
@@ -262,6 +273,80 @@ export default function MemeGenerator() {
       brightness: 100,
       contrast: 100,
       saturation: 100,
+    });
+  };
+  
+  // Обработчики для стилизации
+  const handleStyleSelect = (style: AiStyle) => {
+    setSelectedStyle(style);
+  };
+  
+  const handleApplyStyle = async () => {
+    if (!canvasRef || !selectedTemplate || !selectedStyle) return;
+    
+    try {
+      setIsStyleLoading(true);
+      
+      // Сохраняем оригинальное изображение, если еще не сохранено
+      if (!originalImageUrl) {
+        setOriginalImageUrl(selectedTemplate.imageUrl);
+      }
+      
+      // Получаем данные текущего изображения с канваса
+      const imageData = canvasRef.toDataURL("image/png");
+      
+      // Отправляем запрос на стилизацию
+      const response = await apiRequest({
+        url: "/api/stylize",
+        method: "POST",
+        body: JSON.stringify({
+          image: imageData,
+          styleId: selectedStyle.id
+        }),
+        on401: 'returnNull'
+      });
+      
+      const typedResponse = response as any;
+      if (typedResponse && typedResponse.styledImageUrl) {
+        // Обновляем шаблон с новым изображением
+        setSelectedTemplate({
+          ...selectedTemplate,
+          imageUrl: typedResponse.styledImageUrl
+        });
+        setIsStyleApplied(true);
+        
+        toast({
+          title: "Style applied",
+          description: `Successfully applied '${selectedStyle.name}' style to your image.`
+        });
+      } else {
+        throw new Error("Failed to apply style");
+      }
+    } catch (error) {
+      console.error("Error applying style:", error);
+      toast({
+        title: "Style application failed",
+        description: String(error),
+        variant: "destructive"
+      });
+    } finally {
+      setIsStyleLoading(false);
+    }
+  };
+  
+  const handleRevertStyle = () => {
+    if (!selectedTemplate || !originalImageUrl) return;
+    
+    // Восстанавливаем оригинальное изображение
+    setSelectedTemplate({
+      ...selectedTemplate,
+      imageUrl: originalImageUrl
+    });
+    setIsStyleApplied(false);
+    
+    toast({
+      title: "Original image restored",
+      description: "Reverted to the original image."
     });
   };
 
@@ -361,14 +446,15 @@ export default function MemeGenerator() {
               <Card>
                 <CardContent className="p-0">
                   <Tabs defaultValue="text">
-                    <TabsList className="w-full grid grid-cols-2">
+                    <TabsList className="w-full grid grid-cols-3">
                       <TabsTrigger value="text">Text</TabsTrigger>
                       <TabsTrigger value="filters">Filters</TabsTrigger>
+                      <TabsTrigger value="style">AI Style</TabsTrigger>
                     </TabsList>
                     <div className="p-6">
                       <TabsContent value="text" className="m-0">
                         <div className="space-y-4">
-                          {selectedTemplate.textAreas.map((area: any, index: number) => (
+                          {(selectedTemplate.textAreas as any[] || []).map((area: any, index: number) => (
                             <TextEditor
                               key={index}
                               areaIndex={index}
@@ -428,7 +514,16 @@ export default function MemeGenerator() {
                           </div>
                         </div>
                       </TabsContent>
-
+                      <TabsContent value="style" className="m-0">
+                        <AiStyleSelector
+                          onStyleSelect={handleStyleSelect}
+                          selectedStyle={selectedStyle}
+                          onApplyStyle={handleApplyStyle}
+                          onRevertStyle={handleRevertStyle}
+                          isApplied={isStyleApplied}
+                          isLoading={isStyleLoading}
+                        />
+                      </TabsContent>
                     </div>
                   </Tabs>
                 </CardContent>

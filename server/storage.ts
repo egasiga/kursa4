@@ -194,7 +194,14 @@ export class MemStorage implements IStorage {
   async createMemeTemplate(template: InsertMemeTemplate): Promise<MemeTemplate> {
     const id = this.templateIdCounter++;
     const now = new Date();
-    const newTemplate: MemeTemplate = { ...template, id, createdAt: now };
+    const newTemplate: MemeTemplate = { 
+      ...template, 
+      id, 
+      createdAt: now,
+      userId: template.userId ?? null,
+      isPublic: template.isPublic ?? null,
+      textAreas: template.textAreas ?? {}
+    };
     this.memeTemplates.set(id, newTemplate);
     return newTemplate;
   }
@@ -226,7 +233,16 @@ export class MemStorage implements IStorage {
   async createSavedMeme(meme: InsertSavedMeme): Promise<SavedMeme> {
     const id = this.memeIdCounter++;
     const now = new Date();
-    const newMeme: SavedMeme = { ...meme, id, createdAt: now };
+    const newMeme: SavedMeme = { 
+      ...meme, 
+      id, 
+      createdAt: now,
+      userId: meme.userId ?? null,
+      templateId: meme.templateId ?? null,
+      textContent: meme.textContent ?? {},
+      appliedFilters: meme.appliedFilters ?? {},
+      aiStyle: meme.aiStyle ?? null
+    };
     this.savedMemes.set(id, newMeme);
     return newMeme;
   }
@@ -258,7 +274,16 @@ export class MemStorage implements IStorage {
   async createCollage(collage: InsertCollage): Promise<Collage> {
     const id = this.collageIdCounter++;
     const now = new Date();
-    const newCollage: Collage = { ...collage, id, createdAt: now };
+    const newCollage: Collage = { 
+      ...collage, 
+      id, 
+      createdAt: now,
+      userId: collage.userId ?? null,
+      textContent: collage.textContent ?? {},
+      appliedFilters: collage.appliedFilters ?? {},
+      aiStyle: collage.aiStyle ?? null,
+      sourceImages: collage.sourceImages ?? {}
+    };
     this.collages.set(id, newCollage);
     return newCollage;
   }

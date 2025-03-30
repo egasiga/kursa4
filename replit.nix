@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.llvm
     pkgs.jq
     pkgs.rustc
     pkgs.libiconv
