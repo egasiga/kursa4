@@ -75,23 +75,35 @@ export default function MemeGenerator() {
   const applyStyleMutation = useMutation({
     mutationFn: async ({ image, styleParams }: { image: string; styleParams: any }) => {
       const response = await apiRequest("POST", "/api/apply-style", { image, styleParams });
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to apply style');
+      return data;
     },
     onSuccess: (data) => {
-      // Apply the styled image to the canvas
-      if (canvasRef && data.styledImage) {
-        const ctx = canvasRef.getContext("2d");
-        if (ctx) {
-          const img = new Image();
-          img.onload = () => {
-            ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
-            ctx.drawImage(img, 0, 0, canvasRef.width, canvasRef.height);
-            // Re-add text after applying style
-            renderTextOnCanvas();
-          };
-          img.src = data.styledImage;
-        }
-      }
+      if (!canvasRef || !data.styledImage) return;
+      
+      const ctx = canvasRef.getContext("2d");
+      if (!ctx) return;
+
+      const img = new Image();
+      let loaded = false;
+
+      img.onload = () => {
+        if (loaded) return; // Prevent double rendering
+        loaded = true;
+        
+        ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
+        ctx.drawImage(img, 0, 0, canvasRef.width, canvasRef.height);
+        
+        // Store the styled image data
+        const imageData = ctx.getImageData(0, 0, canvasRef.width, canvasRef.height);
+        ctx.putImageData(imageData, 0, 0);
+        
+        // Re-add text after applying style
+        renderTextOnCanvas();
+      };
+
+      img.src = data.styledImage;
       
       toast({
         title: "AI style applied",
