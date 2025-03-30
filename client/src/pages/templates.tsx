@@ -37,15 +37,15 @@ export default function Templates() {
     <div className="container py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Meme Templates</h1>
+          <h1 className="text-3xl font-bold">Шаблоны изображений</h1>
           <p className="text-muted-foreground mt-1">
-            Browse our collection of meme templates or upload your own
+            Просмотрите нашу коллекцию шаблонов или загрузите свои собственные
           </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setShowUploadModal(true)} className="gap-2">
             <Upload className="w-4 h-4" />
-            Upload Template
+            Загрузить шаблон
           </Button>
         </div>
       </div>
@@ -56,7 +56,7 @@ export default function Templates() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-10"
-              placeholder="Search templates..."
+              placeholder="Поиск шаблонов..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -86,7 +86,7 @@ export default function Templates() {
                 <Link href="/meme-generator">
                   <a className="block aspect-square flex flex-col items-center justify-center text-muted-foreground hover:text-primary transition-colors">
                     <Plus className="w-12 h-12 mb-2" />
-                    <span className="font-medium">Create Custom Template</span>
+                    <span className="font-medium">Создать пользовательский шаблон</span>
                   </a>
                 </Link>
               </Card>
@@ -96,11 +96,11 @@ export default function Templates() {
               <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-accent">
                 <Search className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">No templates found</h3>
+              <h3 className="text-xl font-semibold mb-2">Шаблоны не найдены</h3>
               <p className="text-muted-foreground mb-6">
-                We couldn't find any templates matching your search.
+                Мы не смогли найти шаблоны, соответствующие вашему запросу.
               </p>
-              <Button onClick={() => setSearchQuery("")}>Clear Search</Button>
+              <Button onClick={() => setSearchQuery("")}>Очистить поиск</Button>
             </div>
           )}
         </>

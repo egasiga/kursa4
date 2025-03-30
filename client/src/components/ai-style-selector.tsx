@@ -13,8 +13,8 @@ export interface AiStyle {
   imageUrl: string;
 }
 
-// Пропсы для селектора стилей
-interface AiStyleSelectorProps {
+// Пропсы для редактора изображений
+interface ImageEditorProps {
   onStyleSelect: (style: AiStyle) => void;
   selectedStyle?: AiStyle;
   onApplyStyle: () => void;
@@ -23,14 +23,14 @@ interface AiStyleSelectorProps {
   isLoading: boolean;
 }
 
-export default function AiStyleSelector({
+export default function ImageStyleEditor({
   onStyleSelect,
   selectedStyle,
   onApplyStyle,
   onRevertStyle,
   isApplied,
   isLoading
-}: AiStyleSelectorProps) {
+}: ImageEditorProps) {
   const [styles, setStyles] = useState<AiStyle[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,9 +69,11 @@ export default function AiStyleSelector({
       <CardContent className="p-4">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">Выберите стиль</h3>
+            <h3 className="text-lg font-medium">Художественные стили</h3>
             {isApplied && <Badge variant="outline">Стиль применен</Badge>}
           </div>
+          
+          <p className="text-sm text-gray-600">Выберите художественный стиль для вашего изображения</p>
 
           {isApplied ? (
             <div className="flex space-x-2">
@@ -90,7 +92,7 @@ export default function AiStyleSelector({
               className="w-full" 
               disabled={isApplyDisabled}
             >
-              {isLoading ? 'Применение стиля...' : 'Применить стиль'}
+              {isLoading ? 'Применение стиля...' : 'Применить выбранный стиль'}
             </Button>
           )}
 

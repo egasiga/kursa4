@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TextEditor from "@/components/text-editor";
-import ImageEditor from "@/components/image-editor";
+import MemeImageEditor from "@/components/image-editor";
 import SocialShare from "@/components/social-share";
-import AiStyleSelector, { AiStyle } from "@/components/ai-style-selector";
+import { AiStyle } from "@/components/ai-style-selector";
+import ImageStyleEditor from "@/components/image-editor";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Download, Save, Share2, RotateCcw } from "lucide-react";
 import { MemeTemplate, SavedMeme } from "@shared/schema";
@@ -364,7 +365,7 @@ export default function MemeGenerator() {
       <div className="container py-8 flex items-center justify-center min-h-[500px]">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading meme generator...</p>
+          <p className="text-muted-foreground">Загрузка генератора мемов...</p>
         </div>
       </div>
     );
@@ -387,7 +388,7 @@ export default function MemeGenerator() {
                 />
               ) : (
                 <div className="text-center p-8 bg-accent/30 rounded-lg w-full">
-                  <p className="text-xl mb-4">Select a template to get started</p>
+                  <p className="text-xl mb-4">Выберите шаблон для начала работы</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
                     {templates && Array.isArray(templates) ? templates.slice(0, 6).map((template: MemeTemplate) => (
                       <div
@@ -416,7 +417,7 @@ export default function MemeGenerator() {
                 className="gap-2"
               >
                 <Save className="w-4 h-4" />
-                Save Meme
+                Сохранить мем
               </Button>
               <Button
                 variant="outline"
@@ -425,7 +426,7 @@ export default function MemeGenerator() {
                 className="gap-2"
               >
                 <Download className="w-4 h-4" />
-                Download
+                Скачать
               </Button>
 
               <SocialShare canvasRef={canvasRef} />
@@ -440,12 +441,12 @@ export default function MemeGenerator() {
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="meme-name">Meme Name</Label>
+                      <Label htmlFor="meme-name">Название мема</Label>
                       <Input
                         id="meme-name"
                         value={memeName}
                         onChange={(e) => setMemeName(e.target.value)}
-                        placeholder="Enter a name for your meme"
+                        placeholder="Введите название для вашего мема"
                       />
                     </div>
                   </div>
@@ -456,9 +457,9 @@ export default function MemeGenerator() {
                 <CardContent className="p-0">
                   <Tabs defaultValue="text">
                     <TabsList className="w-full grid grid-cols-3">
-                      <TabsTrigger value="text">Text</TabsTrigger>
-                      <TabsTrigger value="filters">Filters</TabsTrigger>
-                      <TabsTrigger value="style">AI Style</TabsTrigger>
+                      <TabsTrigger value="text">Текст</TabsTrigger>
+                      <TabsTrigger value="filters">Фильтры</TabsTrigger>
+                      <TabsTrigger value="style">Стилизация</TabsTrigger>
                     </TabsList>
                     <div className="p-6">
                       <TabsContent value="text" className="m-0">
@@ -467,7 +468,7 @@ export default function MemeGenerator() {
                             <TextEditor
                               key={index}
                               areaIndex={index}
-                              label={`Text ${index + 1}`}
+                              label={`Текст ${index + 1}`}
                               defaultText={area.defaultText || ""}
                               value={textContent.find((t) => t.areaIndex === index)?.text || ""}
                               style={textContent.find((t) => t.areaIndex === index)?.style || {}}
@@ -482,7 +483,7 @@ export default function MemeGenerator() {
                         <div className="space-y-6">
                           <div className="space-y-2">
                             <div className="flex justify-between">
-                              <Label>Brightness ({filters.brightness}%)</Label>
+                              <Label>Яркость ({filters.brightness}%)</Label>
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -490,7 +491,7 @@ export default function MemeGenerator() {
                                 className="h-6 gap-1"
                               >
                                 <RotateCcw className="w-3 h-3" />
-                                Reset
+                                Сбросить
                               </Button>
                             </div>
                             <Slider
@@ -502,7 +503,7 @@ export default function MemeGenerator() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Contrast ({filters.contrast}%)</Label>
+                            <Label>Контраст ({filters.contrast}%)</Label>
                             <Slider
                               value={[filters.contrast]}
                               min={0}
@@ -512,7 +513,7 @@ export default function MemeGenerator() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Saturation ({filters.saturation}%)</Label>
+                            <Label>Насыщенность ({filters.saturation}%)</Label>
                             <Slider
                               value={[filters.saturation]}
                               min={0}
@@ -524,7 +525,7 @@ export default function MemeGenerator() {
                         </div>
                       </TabsContent>
                       <TabsContent value="style" className="m-0">
-                        <AiStyleSelector
+                        <ImageStyleEditor
                           onStyleSelect={handleStyleSelect}
                           selectedStyle={selectedStyle}
                           onApplyStyle={handleApplyStyle}
@@ -543,19 +544,19 @@ export default function MemeGenerator() {
           {!selectedTemplate && (
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-4">Getting Started</h3>
+                <h3 className="text-xl font-semibold mb-4">Начало работы</h3>
                 <ol className="list-decimal pl-5 space-y-2">
-                  <li>Select a meme template from the gallery</li>
-                  <li>Add your custom text to the template</li>
-                  <li>Customize text style, colors, and positioning</li>
-                  <li>Apply filters to enhance your meme</li>
-                  <li>Save or download your creation</li>
+                  <li>Выберите шаблон мема из галереи</li>
+                  <li>Добавьте свой текст в шаблон</li>
+                  <li>Настройте стиль текста, цвета и положение</li>
+                  <li>Примените фильтры для улучшения вашего мема</li>
+                  <li>Сохраните или скачайте свою работу</li>
                 </ol>
                 <Button
                   onClick={() => navigate("/templates")}
                   className="w-full mt-4"
                 >
-                  Browse All Templates
+                  Просмотреть все шаблоны
                 </Button>
               </CardContent>
             </Card>
