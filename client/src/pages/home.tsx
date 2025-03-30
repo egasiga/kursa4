@@ -89,20 +89,20 @@ export default function Home() {
           </div>
         </section>
 
-        <h2 className="text-xl font-bold mb-4">Доступные функции</h2>
+        <h2 className="text-xl font-bold mb-4 text-black">Доступные функции</h2>
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="shadow-sm">
+          <Card className="shadow-sm bg-slate-800">
             <CardHeader className="pb-2">
-              <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2">
+              <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2 border border-slate-700">
                 <PenTool className="w-6 h-6 text-white" />
               </div>
-              <CardTitle className="text-slate-800">Генератор мемов</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-white">Генератор мемов</CardTitle>
+              <CardDescription className="text-slate-300">
                 Создавайте смешные мемы из нашей коллекции шаблонов или загрузите свои
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-2">
-              <ul className="list-disc pl-5 space-y-1 text-sm">
+              <ul className="list-disc pl-5 space-y-1 text-sm text-slate-200">
                 <li>Выбор из популярных шаблонов мемов</li>
                 <li>Добавление текста со стилизованными шрифтами</li>
                 <li>Точное позиционирование текста</li>
@@ -111,25 +111,25 @@ export default function Home() {
             </CardContent>
             <CardFooter>
               <Link href="/meme-generator">
-                <Button variant="ghost" className="gap-2 text-slate-800">
+                <Button variant="outline" className="gap-2 text-white bg-slate-700 hover:bg-slate-600">
                   Создать мем <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
             </CardFooter>
           </Card>
 
-          <Card className="shadow-sm">
+          <Card className="shadow-sm bg-slate-800">
             <CardHeader className="pb-2">
-              <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2">
+              <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2 border border-slate-700">
                 <Grid2X2 className="w-6 h-6 text-white" />
               </div>
-              <CardTitle className="text-slate-800">Создание коллажей</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-white">Создание коллажей</CardTitle>
+              <CardDescription className="text-slate-300">
                 Объединяйте несколько изображений в красивые коллажи с различными макетами
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-2">
-              <ul className="list-disc pl-5 space-y-1 text-sm">
+              <ul className="list-disc pl-5 space-y-1 text-sm text-slate-200">
                 <li>Выбор из множества шаблонов макетов</li>
                 <li>Загрузка собственных изображений</li>
                 <li>Изменение размера и положения изображений</li>
@@ -138,25 +138,25 @@ export default function Home() {
             </CardContent>
             <CardFooter>
               <Link href="/collage-creator">
-                <Button variant="ghost" className="gap-2 text-slate-800">
+                <Button variant="outline" className="gap-2 text-white bg-slate-700 hover:bg-slate-600">
                   Создать коллаж <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
             </CardFooter>
           </Card>
 
-          <Card className="shadow-sm">
+          <Card className="shadow-sm bg-slate-800">
             <CardHeader className="pb-2">
-              <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2">
+              <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2 border border-slate-700">
                 <Wand2 className="w-6 h-6 text-white" />
               </div>
-              <CardTitle className="text-slate-800">AI Стилизация</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-white">AI Стилизация</CardTitle>
+              <CardDescription className="text-slate-300">
                 Применяйте ИИ-стили для преобразования ваших мемов и коллажей
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-2">
-              <ul className="list-disc pl-5 space-y-1 text-sm">
+              <ul className="list-disc pl-5 space-y-1 text-sm text-slate-200">
                 <li>Выбор из различных художественных стилей</li>
                 <li>Превращение мемов в картины маслом</li>
                 <li>Применение комикс-эффектов и пиксель-арта</li>
@@ -165,7 +165,7 @@ export default function Home() {
             </CardContent>
             <CardFooter>
               <Link href="/meme-generator">
-                <Button variant="ghost" className="gap-2 text-slate-800">
+                <Button variant="outline" className="gap-2 text-white bg-slate-700 hover:bg-slate-600">
                   Попробовать AI стили <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
