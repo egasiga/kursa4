@@ -40,11 +40,7 @@ export default function AiStyleSelector({
       try {
         setLoading(true);
         // Сначала попробуем загрузить из API
-        const response = await apiRequest({
-          url: '/api/styles',
-          method: 'GET',
-          on401: 'returnNull'
-        });
+        const response = await apiRequest("GET", '/api/styles');
         
         if (response && Array.isArray(response) && response.length > 0) {
           setStyles(response as AiStyle[]);

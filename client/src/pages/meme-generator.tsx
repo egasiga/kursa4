@@ -296,14 +296,9 @@ export default function MemeGenerator() {
       const imageData = canvasRef.toDataURL("image/png");
       
       // Отправляем запрос на стилизацию
-      const response = await apiRequest({
-        url: "/api/stylize",
-        method: "POST",
-        body: JSON.stringify({
-          image: imageData,
-          styleId: selectedStyle.id
-        }),
-        on401: 'returnNull'
+      const response = await apiRequest("POST", "/api/stylize", {
+        image: imageData,
+        styleId: selectedStyle.id
       });
       
       const typedResponse = response as any;
