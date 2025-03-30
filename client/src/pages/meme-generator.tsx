@@ -99,6 +99,11 @@ export default function MemeGenerator() {
         const imageData = ctx.getImageData(0, 0, canvasRef.width, canvasRef.height);
         ctx.putImageData(imageData, 0, 0);
         
+        // Save the styled image permanently
+        const styledImageBase64 = canvasRef.toDataURL('image/png');
+        localStorage.setItem('lastStyledImage', styledImageBase64);
+        localStorage.setItem('lastAppliedStyle', JSON.stringify(style));
+        
         // Re-add text after applying style
         renderTextOnCanvas();
       };

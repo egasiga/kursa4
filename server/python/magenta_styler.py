@@ -7,6 +7,7 @@ import tensorflow_hub as hub
 import numpy as np
 from PIL import Image
 import time
+import shutil
 
 # Устанавливаем уровень логирования
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0=all, 1=I, 2=IW, 3=IWE
@@ -115,10 +116,15 @@ def main():
     elapsed_time = time.time() - start_time
     print(f"Стилизация выполнена за {elapsed_time:.2f} секунд")
 
+    # Сохраняем результат с максимальным качеством
     save_image(blended_image, output_image_path)
 
-    # Сохраняем временные файлы для поддержания эффекта стилизации
-    print("Сохраняем временные файлы стилизации")
+    # Создаем копию для постоянного хранения
+    permanent_path = output_image_path.replace('output_', 'permanent_')
+    shutil.copy2(output_image_path, permanent_path)
+
+    # Сохраняем информацию о примененном стиле
+    print(f"Сохраняем результат в постоянное хранилище: {permanent_path}")
 
     print("Готово!")
 

@@ -26,23 +26,23 @@ if (!fs.existsSync(TEMP_DIR)) {
 export async function magentaStyleImage(imageBase64: string, styleParams: any): Promise<string> {
   try {
     console.log("Применение стиля через Google Magenta:", styleParams.aiModel);
-    
+
     // Получаем данные изображения без префикса
     const contentBase64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     const contentBuffer = Buffer.from(contentBase64Data, 'base64');
-    
+
     // Временные файлы для содержимого и стиля
     const timestamp = Date.now();
     const contentImagePath = path.join(TEMP_DIR, `content_${timestamp}.jpg`);
     const styleImagePath = path.join(TEMP_DIR, `style_${timestamp}.jpg`);
     const outputImagePath = path.join(TEMP_DIR, `output_${timestamp}.jpg`);
-    
+
     // Сохраняем контентное изображение
     fs.writeFileSync(contentImagePath, contentBuffer);
-    
+
     // Создаем или получаем изображение стиля
     let styleBuffer: Buffer;
-    
+
     // Если есть стилевое изображение в параметрах, используем его
     if (styleParams.styleImage && styleParams.styleImage.startsWith('data:image')) {
       const styleBase64 = styleParams.styleImage.replace(/^data:image\/\w+;base64,/, "");
@@ -51,44 +51,45 @@ export async function magentaStyleImage(imageBase64: string, styleParams: any): 
       // Иначе используем предустановленный стиль на основе выбранного aiModel
       styleBuffer = await getDefaultStyleImage(styleParams.aiModel);
     }
-    
+
     // Сохраняем стилевое изображение
     fs.writeFileSync(styleImagePath, styleBuffer);
-    
+
     // Получаем интенсивность стиля из параметров или используем значение по умолчанию
     const styleIntensity = typeof styleParams.styleIntensity === 'number' ? styleParams.styleIntensity : 1.0;
-    
+
     // Запускаем Python-скрипт для применения стиля
     console.log(`Запуск скрипта для применения стиля с интенсивностью ${styleIntensity}...`);
     const result = await runStyleTransfer(contentImagePath, styleImagePath, outputImagePath, styleIntensity);
-    
+
     if (!result.success) {
       throw new Error(`Ошибка при применении стиля: ${result.error}`);
     }
-    
+
     // Считываем результат и добавляем метаданные стиля
     const outputBuffer = fs.readFileSync(outputImagePath);
-    
-    // Сохраняем информацию о примененном стиле
-    const styleInfo = {
-      timestamp: Date.now(),
-      style: styleParams.aiModel,
-      intensity: styleParams.styleIntensity
+
+    // Сохраняем результат стилизации
+    console.log("Сохраняем результат стилизации");
+
+    // Сохраняем копию выходного файла с постоянным именем
+    const permanentOutputPath = path.join(TEMP_DIR, `permanent_${styleParams.aiModel.replace(/\s+/g, '_')}.jpg`);
+    fs.copyFileSync(outputImagePath, permanentOutputPath);
+
+    // Сохраняем метаданные стиля
+    const styleMetadata = {
+      model: styleParams.aiModel,
+      intensity: styleParams.styleIntensity,
+      timestamp: Date.now()
     };
-    
-    // Записываем метаданные в отдельный файл
-    const metaPath = outputImagePath + '.meta.json';
-    fs.writeFileSync(metaPath, JSON.stringify(styleInfo));
-    
-    const outputBase64 = outputBuffer.toString('base64');
-    
-    // Оставляем временные файлы для сохранения эффекта стилизации
-    console.log("Сохраняем временные файлы стилизации");
-    
+    fs.writeFileSync(permanentOutputPath + '.meta.json', JSON.stringify(styleMetadata));
+
     // Получаем MIME-тип из исходного изображения
     const mimeMatch = imageBase64.match(/^data:([^;]+);base64,/);
     const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-    
+
+    const outputBase64 = outputBuffer.toString('base64');
+
     return `data:${mime};base64,${outputBase64}`;
   } catch (error) {
     console.error("Ошибка при стилизации через Google Magenta:", error);
@@ -110,25 +111,25 @@ async function runStyleTransfer(
   outputImagePath: string,
   styleIntensity: number = 1.0
 ): Promise<{ success: boolean, error?: string }> {
-  
+
   return new Promise((resolve) => {
     // Определяем путь к Python скрипту для применения стиля
     const scriptPath = path.join(process.cwd(), 'server', 'python', 'magenta_styler.py');
-    
+
     // Создаем директорию для скрипта, если она не существует
     const scriptDir = path.dirname(scriptPath);
     if (!fs.existsSync(scriptDir)) {
       fs.mkdirSync(scriptDir, { recursive: true });
     }
-    
+
     // Создаем Python скрипт, если он не существует
     if (!fs.existsSync(scriptPath)) {
       createMagentaScript(scriptPath);
     }
-    
+
     // Используем переданную интенсивность стиля или значение по умолчанию
     console.log(`Используем интенсивность стиля: ${styleIntensity}`);
-    
+
     // Запускаем Python-процесс для применения стиля с параметром интенсивности
     const pythonProcess = spawn('python', [
       scriptPath,
@@ -137,25 +138,25 @@ async function runStyleTransfer(
       outputImagePath,
       String(styleIntensity) // Передаем интенсивность как параметр командной строки
     ]);
-    
+
     let errorOutput = '';
-    
+
     pythonProcess.stdout.on('data', (data) => {
       console.log(`Выходные данные скрипта: ${data}`);
     });
-    
+
     pythonProcess.stderr.on('data', (data) => {
       errorOutput += data.toString();
       console.error(`Ошибка скрипта: ${data}`);
     });
-    
+
     pythonProcess.on('close', (code) => {
       if (code !== 0) {
         console.error(`Процесс завершился с кодом ${code}`);
         resolve({ success: false, error: errorOutput });
         return;
       }
-      
+
       if (!fs.existsSync(outputImagePath)) {
         resolve({ 
           success: false, 
@@ -163,7 +164,7 @@ async function runStyleTransfer(
         });
         return;
       }
-      
+
       resolve({ success: true });
     });
   });
@@ -194,7 +195,7 @@ def load_image(image_path):
     # Преобразуем в RGB если это необходимо
     if img.mode != 'RGB':
         img = img.convert('RGB')
-    
+
     # Преобразуем в тензор
     img = np.array(img, dtype=np.float32) / 255.0
     img = img[tf.newaxis, ...]
@@ -206,7 +207,7 @@ def save_image(image, output_path):
     image = tf.squeeze(image, axis=0)
     image = tf.clip_by_value(image, 0.0, 1.0)
     image = tf.image.convert_image_dtype(image, tf.uint8)
-    
+
     # Преобразуем тензор в PIL Image и сохраняем
     image_array = image.numpy()
     image_pil = Image.fromarray(image_array)
@@ -217,11 +218,11 @@ def main():
     if len(sys.argv) < 4:
         print("Использование: python magenta_styler.py content_image style_image output_image [style_intensity]")
         sys.exit(1)
-    
+
     content_image_path = sys.argv[1]
     style_image_path = sys.argv[2]
     output_image_path = sys.argv[3]
-    
+
     # Получаем параметр интенсивности стиля, если он предоставлен
     # По умолчанию 0.4 (40% оригинала, 60% стиля)
     style_intensity = 0.4
@@ -235,15 +236,15 @@ def main():
             print(f"Установлена интенсивность стиля: {intensity_param} (blend_factor: {style_intensity})")
         except ValueError:
             print(f"Ошибка при парсинге параметра интенсивности: {sys.argv[4]}. Используем значение по умолчанию.")
-    
+
     print(f"Загрузка модели из TensorFlow Hub...")
     start_time = time.time()
     hub_module = hub.load('https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/2')
     print(f"Модель загружена за {time.time() - start_time:.2f} секунд")
-    
+
     print(f"Обработка контентного изображения: {content_image_path}")
     content_image = load_image(content_image_path)
-    
+
     print(f"Обработка стилевого изображения: {style_image_path}")
     # Стилевое изображение должно быть 256x256 для наилучших результатов
     style_img = Image.open(style_image_path)
@@ -251,25 +252,25 @@ def main():
         style_img = style_img.convert('RGB')
     style_img = style_img.resize((256, 256), Image.LANCZOS)
     style_img.save(style_image_path + ".resized.jpg")
-    
+
     # Загружаем стилевое изображение в правильном формате
     style_image = np.array(style_img, dtype=np.float32) / 255.0
     style_image = style_image[tf.newaxis, ...]
-    
+
     print("Применение стиля...")
     start_time = time.time()
-    
+
     # Вычисляем стилизованное изображение
     outputs = hub_module(tf.constant(content_image), tf.constant(style_image))
     stylized_image = outputs[0]
-    
+
     # Проверяем и корректируем размеры изображений перед смешиванием
     content_shape = tf.shape(content_image)
     stylized_shape = tf.shape(stylized_image)
-    
+
     print(f"Размер контентного изображения: {content_shape}")
     print(f"Размер стилизованного изображения: {stylized_shape}")
-    
+
     # Изменяем размер стилизованного изображения, чтобы он совпадал с оригиналом
     if not tf.reduce_all(tf.equal(content_shape, stylized_shape)):
         print("Изменение размера стилизованного изображения для соответствия оригиналу")
@@ -279,26 +280,26 @@ def main():
             method=tf.image.ResizeMethod.LANCZOS3
         )
         print(f"Новый размер стилизованного изображения: {tf.shape(stylized_image)}")
-    
+
     # Используем параметр интенсивности для смешивания
     # style_intensity - это сколько оригинала сохраняем (0.1 - мало, 0.7 - много)
     blend_factor = style_intensity
-    
+
     # Линейная интерполяция между оригинальным и стилизованным изображением
     # content_image * blend_factor + stylized_image * (1 - blend_factor)
     blended_image = blend_factor * content_image + (1 - blend_factor) * stylized_image
-    
+
     elapsed_time = time.time() - start_time
     print(f"Стилизация выполнена за {elapsed_time:.2f} секунд")
-    
+
     save_image(blended_image, output_image_path)
-    
+
     # Очистка временных файлов
     try:
         os.remove(style_image_path + ".resized.jpg")
     except:
         pass
-    
+
     print("Готово!")
 
 if __name__ == "__main__":
@@ -320,7 +321,7 @@ async function getDefaultStyleImage(styleName: string): Promise<Buffer> {
   if (!fs.existsSync(styleDir)) {
     fs.mkdirSync(styleDir, { recursive: true });
   }
-  
+
   // Маппинг стилей на файлы изображений (эти изображения нужно будет создать)
   const styleMap: Record<string, string> = {
     "Масляная живопись": "oil_painting.jpg",
@@ -346,16 +347,16 @@ async function getDefaultStyleImage(styleName: string): Promise<Buffer> {
     "Ван Гог": "van_gogh.jpg",
     "Van Gogh": "van_gogh.jpg"
   };
-  
+
   // Получаем имя файла для выбранного стиля
   const styleFile = styleMap[styleName] || "neural_art.jpg";
   const stylePath = path.join(styleDir, styleFile);
-  
+
   // Проверяем, существует ли файл, и если нет - создаем базовое изображение для стиля
   if (!fs.existsSync(stylePath)) {
     await createDefaultStyleImage(stylePath, styleName);
   }
-  
+
   // Возвращаем буфер с изображением стиля
   return fs.readFileSync(stylePath);
 }
@@ -367,9 +368,9 @@ async function getDefaultStyleImage(styleName: string): Promise<Buffer> {
 async function createDefaultStyleImage(stylePath: string, styleName: string): Promise<void> {
   // Для демонстрации просто создаем базовое изображение цветного градиента
   // В реальном приложении здесь будут предустановленные изображения стилей
-  
+
   // В дальнейшем здесь можно добавить скачивание примеров стилей или встроить их в код
-  
+
   // Для теста создаем пустое изображение 256x256
   const blankImagePath = path.join(TEMP_DIR, 'blank_style.jpg');
   const pythonScript = `
@@ -387,7 +388,7 @@ if "Масляная" in style or "Oil" in style:
             arr[i, j, 0] = i  # Красный
             arr[i, j, 1] = j  # Зеленый
             arr[i, j, 2] = (i + j) // 2  # Синий
-            
+
 elif "Набросок" in style or "Pencil" in style:
     # Градиент для карандашного наброска
     arr = np.zeros((256, 256, 3), dtype=np.uint8)
@@ -397,7 +398,7 @@ elif "Набросок" in style or "Pencil" in style:
             arr[i, j, 0] = val  # Красный
             arr[i, j, 1] = val  # Зеленый
             arr[i, j, 2] = val  # Синий
-            
+
 elif "Акварель" in style or "Water" in style:
     # Градиент для акварели
     arr = np.zeros((256, 256, 3), dtype=np.uint8)
@@ -406,7 +407,7 @@ elif "Акварель" in style or "Water" in style:
             arr[i, j, 0] = 100  # Красный
             arr[i, j, 1] = i  # Зеленый
             arr[i, j, 2] = j  # Синий
-            
+
 elif "Пиксель" in style or "Pixel" in style:
     # Градиент для пиксель-арта
     arr = np.zeros((256, 256, 3), dtype=np.uint8)
@@ -419,7 +420,7 @@ elif "Пиксель" in style or "Pixel" in style:
                         arr[i+di, j+dj, 0] = val
                         arr[i+di, j+dj, 1] = 128
                         arr[i+di, j+dj, 2] = 255 - val
-                        
+
 elif "Аниме" in style or "Anime" in style:
     # Градиент для аниме
     arr = np.zeros((256, 256, 3), dtype=np.uint8)
@@ -428,7 +429,7 @@ elif "Аниме" in style or "Anime" in style:
             arr[i, j, 0] = 255 - i  # Красный
             arr[i, j, 1] = j // 2  # Зеленый
             arr[i, j, 2] = i // 2  # Синий
-            
+
 elif "Ван Гог" in style or "Van Gogh" in style:
     # Градиент для стиля Ван Гога
     arr = np.zeros((256, 256, 3), dtype=np.uint8)
@@ -437,7 +438,7 @@ elif "Ван Гог" in style or "Van Gogh" in style:
             arr[i, j, 0] = 255 - j // 2  # Красный
             arr[i, j, 1] = 200 - i // 4  # Зеленый
             arr[i, j, 2] = i // 3  # Синий
-            
+
 else:
     # Стандартный градиент для других стилей
     arr = np.zeros((256, 256, 3), dtype=np.uint8)
@@ -455,15 +456,15 @@ img.save('${blankImagePath}')
   // Создаем временный Python-скрипт для генерации тестового изображения
   const tempScriptPath = path.join(TEMP_DIR, 'create_style.py');
   fs.writeFileSync(tempScriptPath, pythonScript);
-  
+
   // Выполняем скрипт для создания тестового изображения
   await new Promise<void>((resolve, reject) => {
     const pythonProcess = spawn('python', [tempScriptPath]);
-    
+
     pythonProcess.stderr.on('data', (data) => {
       console.error(`Ошибка при создании тестового изображения: ${data}`);
     });
-    
+
     pythonProcess.on('close', (code) => {
       if (code === 0) {
         // Копируем созданное изображение в целевую директорию
