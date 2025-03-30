@@ -70,14 +70,8 @@ export async function magentaStyleImage(imageBase64: string, styleParams: any): 
     const outputBuffer = fs.readFileSync(outputImagePath);
     const outputBase64 = outputBuffer.toString('base64');
     
-    // Оставляем временные файлы, чтобы стилизация не пропадала
-    // try {
-    //   fs.unlinkSync(contentImagePath);
-    //   fs.unlinkSync(styleImagePath);
-    //   fs.unlinkSync(outputImagePath);
-    // } catch (e) {
-    //   console.warn("Ошибка при удалении временных файлов:", e);
-    // }
+    // Оставляем временные файлы для сохранения эффекта стилизации
+    console.log("Сохраняем временные файлы стилизации");
     
     // Получаем MIME-тип из исходного изображения
     const mimeMatch = imageBase64.match(/^data:([^;]+);base64,/);
