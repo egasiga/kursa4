@@ -117,11 +117,8 @@ def main():
 
     save_image(blended_image, output_image_path)
 
-    # Сохраняем временные файлы для постоянства эффекта
-    # try:
-    #     os.remove(style_image_path + ".resized.jpg")
-    # except:
-    #     pass
+    # Сохраняем временные файлы для поддержания эффекта стилизации
+    print("Сохраняем временные файлы стилизации")
 
     print("Готово!")
 

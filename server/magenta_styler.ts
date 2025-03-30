@@ -66,8 +66,20 @@ export async function magentaStyleImage(imageBase64: string, styleParams: any): 
       throw new Error(`Ошибка при применении стиля: ${result.error}`);
     }
     
-    // Считываем результат и конвертируем в base64
+    // Считываем результат и добавляем метаданные стиля
     const outputBuffer = fs.readFileSync(outputImagePath);
+    
+    // Сохраняем информацию о примененном стиле
+    const styleInfo = {
+      timestamp: Date.now(),
+      style: styleParams.aiModel,
+      intensity: styleParams.styleIntensity
+    };
+    
+    // Записываем метаданные в отдельный файл
+    const metaPath = outputImagePath + '.meta.json';
+    fs.writeFileSync(metaPath, JSON.stringify(styleInfo));
+    
     const outputBase64 = outputBuffer.toString('base64');
     
     // Оставляем временные файлы для сохранения эффекта стилизации
