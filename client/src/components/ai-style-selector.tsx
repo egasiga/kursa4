@@ -41,9 +41,10 @@ export default function AiStyleSelector({
         setLoading(true);
         // Сначала попробуем загрузить из API
         const response = await apiRequest("GET", '/api/styles');
+        const data = await response.json();
         
-        if (response && Array.isArray(response) && response.length > 0) {
-          setStyles(response as AiStyle[]);
+        if (data && Array.isArray(data) && data.length > 0) {
+          setStyles(data as AiStyle[]);
         } else {
           // Иначе используем заглушки
           setStyles(placeholderStyles);

@@ -79,10 +79,22 @@ export default function MemeGenerator() {
   useEffect(() => {
     // When template data is loaded, set it as the selected template
     if (templateData) {
-      setSelectedTemplate(templateData);
+      // Типизируем входные данные и создаем объект MemeTemplate
+      const template: MemeTemplate = {
+        ...templateData,
+        id: templateData.id || 0,
+        imageUrl: templateData.imageUrl || '',
+        name: templateData.name || '',
+        userId: templateData.userId || null,
+        isPublic: templateData.isPublic || null,
+        textAreas: templateData.textAreas || [],
+        createdAt: templateData.createdAt || null
+      };
+      
+      setSelectedTemplate(template);
       
       // Initialize text content from template's text areas
-      const textAreas = templateData.textAreas as any[] || [];
+      const textAreas = template.textAreas as any[] || [];
       if (Array.isArray(textAreas)) {
         setTextContent(
           textAreas.map((area: any, index: number) => ({
@@ -301,7 +313,8 @@ export default function MemeGenerator() {
         styleId: selectedStyle.id
       });
       
-      const typedResponse = response as any;
+      // Распаковываем JSON из Response
+      const typedResponse = await response.json();
       if (typedResponse && typedResponse.styledImageUrl) {
         // Обновляем шаблон с новым изображением
         setSelectedTemplate({
