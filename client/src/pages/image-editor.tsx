@@ -98,20 +98,62 @@ export default function ImageEditor() {
     },
     maxFiles: 1,
     onDrop: (acceptedFiles) => {
-      if (acceptedFiles.length === 0) return;
+      console.log("Файлы были загружены:", acceptedFiles);
+      if (acceptedFiles.length === 0) {
+        console.log("Нет принятых файлов");
+        return;
+      }
       
       const file = acceptedFiles[0];
+      console.log("Загружаем файл:", file.name, file.type, file.size);
+      
       const reader = new FileReader();
       
       reader.onload = (event) => {
+        console.log("FileReader загрузил файл");
         if (event.target?.result) {
           const imageDataURL = event.target.result.toString();
-          setUploadedImage(imageDataURL);
-          setOriginalImage(imageDataURL);
-          setIsStyleApplied(false);
-          setActiveTab("edit");
-          renderCanvas(imageDataURL);
+          console.log("Получен URL данных изображения, длина:", imageDataURL.length);
+          
+          // Создаем объект Image для предварительной загрузки
+          const img = new Image();
+          img.onload = () => {
+            console.log("Изображение предварительно загружено с размерами:", img.width, "x", img.height);
+            
+            // Теперь устанавливаем состояния после успешной загрузки изображения
+            setUploadedImage(imageDataURL);
+            setOriginalImage(imageDataURL);
+            setIsStyleApplied(false);
+            setActiveTab("edit");
+            
+            // Передаем небольшую задержку для обновления состояния, прежде чем рендерить
+            setTimeout(() => {
+              console.log("Вызываем renderCanvas");
+              renderCanvas(imageDataURL);
+            }, 100);
+          };
+          
+          img.onerror = (error) => {
+            console.error("Ошибка при предварительной загрузке изображения:", error);
+            toast({
+              title: "Ошибка",
+              description: "Не удалось загрузить изображение",
+              variant: "destructive"
+            });
+          };
+          
+          // Начинаем загрузку изображения
+          img.src = imageDataURL;
         }
+      };
+      
+      reader.onerror = (error) => {
+        console.error("Ошибка при чтении файла:", error);
+        toast({
+          title: "Ошибка",
+          description: "Не удалось прочитать файл",
+          variant: "destructive"
+        });
       };
       
       reader.readAsDataURL(file);
@@ -120,14 +162,23 @@ export default function ImageEditor() {
 
   // Функция для рендеринга изображения на canvas
   const renderCanvas = async (imageUrl: string) => {
-    if (!canvasRef.current) return;
+    console.log("Начало renderCanvas с URL:", imageUrl);
+    if (!canvasRef.current) {
+      console.error("canvasRef.current не найден");
+      return;
+    }
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.error("Не удалось получить контекст canvas");
+      return;
+    }
     
     try {
+      console.log("Загружаю изображение...");
       const img = await loadImage(imageUrl);
+      console.log("Изображение загружено, размеры:", img.width, "x", img.height);
       
       // Устанавливаем размеры canvas
       const maxWidth = Math.min(800, window.innerWidth - 40);
@@ -149,6 +200,7 @@ export default function ImageEditor() {
         width = width * ratio;
       }
       
+      console.log("Новые размеры canvas:", width, "x", height);
       canvas.width = width;
       canvas.height = height;
       
@@ -157,6 +209,7 @@ export default function ImageEditor() {
       
       // Рисуем изображение
       ctx.drawImage(img, 0, 0, width, height);
+      console.log("Изображение отрисовано на canvas");
       
       // Рисуем тексты, если они есть
       texts.forEach((text) => {
@@ -321,7 +374,8 @@ export default function ImageEditor() {
                     <div className="flex justify-center bg-slate-50 rounded-lg p-2">
                       <canvas
                         ref={canvasRef}
-                        className="max-w-full object-contain rounded shadow-sm"
+                        className="max-w-full object-contain rounded shadow-sm border border-slate-200"
+                        style={{ minHeight: '300px', minWidth: '300px' }}
                       />
                     </div>
                   </CardContent>
