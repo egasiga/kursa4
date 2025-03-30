@@ -332,9 +332,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stylePath = `./styles/${styleId.replace('style', '')}.jpg`;
       const outputPath = `./temp/stylized_${timestamp}.jpg`;
       
-      // Сохраняем исходное изображение
+      // Сохраняем исходное изображение с высоким качеством
       const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
       fs.writeFileSync(contentPath, Buffer.from(base64Data, 'base64'));
+      console.log(`Original image saved to ${contentPath}`);
       
       // Запускаем Python скрипт для обработки изображения
       try {
@@ -376,8 +377,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Failed to create stylized image" });
       }
       
+      // Чтение стилизованного изображения высокого качества
       const stylizedImage = fs.readFileSync(outputPath);
       const stylizedBase64 = `data:image/jpeg;base64,${stylizedImage.toString('base64')}`;
+      
+      console.log(`Sending stylized image, size: ${stylizedImage.length} bytes`);
       
       res.json({
         originalImage: image,

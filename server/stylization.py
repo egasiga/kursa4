@@ -18,10 +18,16 @@ def load_img(img_path):
     img = tf.image.convert_image_dtype(img, tf.float32)
     
     # Ограничение размера изображения для ускорения обработки
-    max_dim = 512
+    # Увеличиваем максимальный размер до 1024 пикселей
+    max_dim = 1024
     shape = tf.cast(tf.shape(img)[:-1], tf.float32)
     long_dim = max(shape)
-    scale = max_dim / long_dim
+    
+    # Сохраняем оригинальное разрешение, если оно меньше максимального
+    if long_dim <= max_dim:
+        scale = 1.0
+    else:
+        scale = max_dim / long_dim
     
     new_shape = tf.cast(shape * scale, tf.int32)
     img = tf.image.resize(img, new_shape)
@@ -29,13 +35,15 @@ def load_img(img_path):
     return img
 
 def save_image_from_tensor(tensor, path):
-    """Сохраняет тензор как изображение"""
+    """Сохраняет тензор как изображение с высоким качеством"""
     tensor = tensor[0]  # Убираем размерность пакета
     tensor = tf.clip_by_value(tensor, 0.0, 1.0)
     tensor = tf.image.convert_image_dtype(tensor, tf.uint8)
     img_array = tensor.numpy()
     img = Image.fromarray(img_array)
-    img.save(path)
+    
+    # Сохраняем изображение с максимальным качеством
+    img.save(path, format='JPEG', quality=95, optimize=True)
     return path
 
 def stylize_image(content_img_path, style_img_path, output_path):
@@ -44,8 +52,9 @@ def stylize_image(content_img_path, style_img_path, output_path):
     print(f"Loading style image from {style_img_path}")
     
     try:
-        # Загружаем модель для стилизации изображений из TensorFlow Hub
+        # Загружаем высококачественную модель для стилизации изображений из TensorFlow Hub
         print("Loading TensorFlow Hub model...")
+        # Используем модель v1-256 для лучшего качества и разрешения
         model = hub.load('https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/2')
         
         # Загружаем изображения

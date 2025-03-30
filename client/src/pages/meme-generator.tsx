@@ -316,7 +316,8 @@ export default function MemeGenerator() {
       // Распаковываем JSON из Response
       const typedResponse = await response.json();
       if (typedResponse && typedResponse.styledImageUrl) {
-        // Обновляем шаблон с новым изображением
+        console.log("Stylized image received successfully");
+        // Обновляем шаблон с новым изображением высокого качества
         setSelectedTemplate({
           ...selectedTemplate,
           imageUrl: typedResponse.styledImageUrl
