@@ -316,15 +316,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Маршрут для стилизации изображения
   app.post("/api/stylize", async (req: Request, res: Response) => {
     try {
+      console.log("Получен запрос на стилизацию изображения");
+      console.log("Тип Content-Type:", req.headers['content-type']);
+      console.log("Тело запроса получено:", req.body ? "да" : "нет");
+
       const { image, styleId } = req.body;
       
       if (!image) {
+        console.log("Отсутствует изображение в запросе");
         return res.status(400).json({ message: "Image is required" });
       }
       
       if (!styleId) {
+        console.log("Отсутствует ID стиля в запросе");
         return res.status(400).json({ message: "Style ID is required" });
       }
+      
+      console.log("Изображение и стиль получены. ID стиля:", styleId);
 
       // Генерируем временные имена файлов
       const timestamp = Date.now();

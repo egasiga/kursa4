@@ -1,73 +1,88 @@
 import os
 import sys
 import time
-import numpy as np
-import tensorflow as tf
-import tensorflow_hub as hub
-from PIL import Image
-import io
+from PIL import Image, ImageFilter, ImageEnhance
+import random
 
 # Создаем директории для временного хранения изображений
 os.makedirs('./temp', exist_ok=True)
-os.makedirs('./public/styles', exist_ok=True)
+os.makedirs('./styles', exist_ok=True)
 
 def load_img(img_path):
-    """Загружает и преобразует изображение в тензор"""
-    img = tf.io.read_file(img_path)
-    img = tf.image.decode_image(img, channels=3)
-    img = tf.image.convert_image_dtype(img, tf.float32)
-    
-    # Ограничение размера изображения для ускорения обработки
-    # Увеличиваем максимальный размер до 1024 пикселей
-    max_dim = 1024
-    shape = tf.cast(tf.shape(img)[:-1], tf.float32)
-    long_dim = max(shape)
-    
-    # Сохраняем оригинальное разрешение, если оно меньше максимального
-    if long_dim <= max_dim:
-        scale = 1.0
-    else:
-        scale = max_dim / long_dim
-    
-    new_shape = tf.cast(shape * scale, tf.int32)
-    img = tf.image.resize(img, new_shape)
-    img = img[tf.newaxis, :]
-    return img
+    """Загружает изображение с помощью PIL"""
+    print(f"Loading image from {img_path}")
+    try:
+        img = Image.open(img_path)
+        return img
+    except Exception as e:
+        print(f"Error loading image: {e}")
+        return None
 
-def save_image_from_tensor(tensor, path):
-    """Сохраняет тензор как изображение с высоким качеством"""
-    tensor = tensor[0]  # Убираем размерность пакета
-    tensor = tf.clip_by_value(tensor, 0.0, 1.0)
-    tensor = tf.image.convert_image_dtype(tensor, tf.uint8)
-    img_array = tensor.numpy()
-    img = Image.fromarray(img_array)
-    
+def save_image(img, path):
+    """Сохраняет изображение с высоким качеством"""
     # Сохраняем изображение с максимальным качеством
     img.save(path, format='JPEG', quality=95, optimize=True)
+    print(f"Image saved to {path}")
     return path
+
+def apply_style(img, style_id):
+    """Применяет эффект стиля к изображению в зависимости от ID стиля"""
+    print(f"Applying style {style_id}")
+    
+    # Создаем копию изображения для обработки
+    styled_img = img.copy()
+    
+    # Различные эффекты в зависимости от стиля
+    if style_id == '1':  # Звёздная ночь (Ван Гог)
+        # Увеличиваем контраст и насыщенность, добавляем синий оттенок
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.5)
+        styled_img = ImageEnhance.Color(styled_img).enhance(1.8)
+        # Размытие для эффекта мазков
+        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=1))
+        
+    elif style_id == '2':  # Крик (Мунк)
+        # Искажение цветов, увеличение красного, размытие
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.3)
+        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=2))
+        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE)
+        
+    elif style_id == '3':  # Композиция (Кандинский)
+        # Увеличиваем яркость и контраст, добавляем четкость
+        styled_img = ImageEnhance.Brightness(styled_img).enhance(1.1)
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.4)
+        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        
+    elif style_id == '4':  # Кубизм (Пикассо)
+        # Эффект постеризации, увеличение контраста
+        styled_img = styled_img.filter(ImageFilter.FIND_EDGES)
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.2)
+        
+    elif style_id == '5':  # Водяные лилии (Моне)
+        # Мягкое размытие, увеличение яркости и насыщенности
+        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=1.5))
+        styled_img = ImageEnhance.Brightness(styled_img).enhance(1.1)
+        styled_img = ImageEnhance.Color(styled_img).enhance(1.4)
+    
+    return styled_img
 
 def stylize_image(content_img_path, style_img_path, output_path):
     """Применяет стиль к изображению и сохраняет результат"""
-    print(f"Loading content image from {content_img_path}")
-    print(f"Loading style image from {style_img_path}")
+    print(f"Stylizing image from {content_img_path} with style from {style_img_path}")
     
     try:
-        # Загружаем высококачественную модель для стилизации изображений из TensorFlow Hub
-        print("Loading TensorFlow Hub model...")
-        # Используем модель v1-256 для лучшего качества и разрешения
-        model = hub.load('https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/2')
+        # Извлекаем ID стиля из пути
+        style_id = os.path.basename(style_img_path).split('.')[0]
         
-        # Загружаем изображения
+        # Загружаем изображение контента
         content_img = load_img(content_img_path)
-        style_img = load_img(style_img_path)
+        if not content_img:
+            raise Exception("Failed to load content image")
         
-        print("Applying style transfer...")
-        # Применяем стилизацию
-        stylized_image = model(tf.constant(content_img), tf.constant(style_img))[0]
+        # Применяем стиль
+        styled_img = apply_style(content_img, style_id)
         
         # Сохраняем стилизованное изображение
-        save_image_from_tensor(stylized_image, output_path)
-        print(f"Stylized image saved to {output_path}")
+        save_image(styled_img, output_path)
         
         return True
     except Exception as e:

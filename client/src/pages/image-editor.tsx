@@ -262,31 +262,36 @@ export default function ImageEditor() {
 
   // Обработчик применения стиля
   const applyStyle = async () => {
-    if (!selectedStyle || !uploadedImage || !canvasRef.current) return;
+    if (!selectedStyle || !uploadedImage || !canvasRef.current) {
+      console.log("Не хватает данных для отправки:", { 
+        hasStyle: !!selectedStyle, 
+        hasImage: !!uploadedImage, 
+        hasCanvas: !!canvasRef.current 
+      });
+      return;
+    }
     
     setIsProcessing(true);
     
     try {
+      console.log("Начинаем процесс применения стиля");
       // Преобразуем canvas в Blob
       const canvas = canvasRef.current;
       
       // Преобразуем canvas в base64
       const canvasDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      console.log("Получили данные изображения в формате base64, длина:", canvasDataUrl.length);
       
-      // Отправляем изображение на сервер для стилизации
-      const formData = new FormData();
-      
-      // Конвертируем base64 в blob
-      const fetchResponse = await fetch(canvasDataUrl);
-      const blob = await fetchResponse.blob();
-      
-      formData.append('image', blob, 'image.jpg');
-      formData.append('styleId', selectedStyle.id);
-
+      // Отправляем данные на сервер напрямую, без FormData
       const response = await apiRequest('/api/stylize', {
         method: 'POST',
-        body: formData,
-        headers: {}
+        body: JSON.stringify({
+          image: canvasDataUrl,
+          styleId: selectedStyle.id
+        }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response && response.imageUrl) {
