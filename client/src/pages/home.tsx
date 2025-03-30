@@ -93,8 +93,8 @@ export default function Home() {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
-              <div className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mb-2">
-                <PenTool className="w-6 h-6 text-blue-600" />
+              <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2">
+                <PenTool className="w-6 h-6 text-white" />
               </div>
               <CardTitle>Генератор мемов</CardTitle>
               <CardDescription>
@@ -111,7 +111,7 @@ export default function Home() {
             </CardContent>
             <CardFooter>
               <Link href="/meme-generator">
-                <Button variant="ghost" className="gap-2 text-blue-600">
+                <Button variant="ghost" className="gap-2 text-slate-800">
                   Создать мем <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
@@ -120,8 +120,8 @@ export default function Home() {
 
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
-              <div className="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center mb-2">
-                <Grid2X2 className="w-6 h-6 text-purple-600" />
+              <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2">
+                <Grid2X2 className="w-6 h-6 text-white" />
               </div>
               <CardTitle>Создание коллажей</CardTitle>
               <CardDescription>
@@ -138,7 +138,7 @@ export default function Home() {
             </CardContent>
             <CardFooter>
               <Link href="/collage-creator">
-                <Button variant="ghost" className="gap-2 text-purple-600">
+                <Button variant="ghost" className="gap-2 text-slate-800">
                   Создать коллаж <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
@@ -147,8 +147,8 @@ export default function Home() {
 
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
-              <div className="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-2">
-                <Wand2 className="w-6 h-6 text-green-600" />
+              <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2">
+                <Wand2 className="w-6 h-6 text-white" />
               </div>
               <CardTitle>AI Стилизация</CardTitle>
               <CardDescription>
@@ -165,7 +165,7 @@ export default function Home() {
             </CardContent>
             <CardFooter>
               <Link href="/meme-generator">
-                <Button variant="ghost" className="gap-2 text-green-600">
+                <Button variant="ghost" className="gap-2 text-slate-800">
                   Попробовать AI стили <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
