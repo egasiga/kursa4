@@ -67,7 +67,7 @@ export default function Home() {
       {/* Основное содержимое */}
       <div className="flex-1 overflow-auto bg-slate-100 p-6">
         <section className="text-center mb-12 space-y-4 bg-white p-8 shadow-sm rounded-lg">
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight text-black">
             Создавайте потрясающие мемы и коллажи
           </h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
@@ -96,7 +96,7 @@ export default function Home() {
               <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2">
                 <PenTool className="w-6 h-6 text-white" />
               </div>
-              <CardTitle>Генератор мемов</CardTitle>
+              <CardTitle className="text-slate-800">Генератор мемов</CardTitle>
               <CardDescription>
                 Создавайте смешные мемы из нашей коллекции шаблонов или загрузите свои
               </CardDescription>
@@ -123,7 +123,7 @@ export default function Home() {
               <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2">
                 <Grid2X2 className="w-6 h-6 text-white" />
               </div>
-              <CardTitle>Создание коллажей</CardTitle>
+              <CardTitle className="text-slate-800">Создание коллажей</CardTitle>
               <CardDescription>
                 Объединяйте несколько изображений в красивые коллажи с различными макетами
               </CardDescription>
@@ -150,7 +150,7 @@ export default function Home() {
               <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2">
                 <Wand2 className="w-6 h-6 text-white" />
               </div>
-              <CardTitle>AI Стилизация</CardTitle>
+              <CardTitle className="text-slate-800">AI Стилизация</CardTitle>
               <CardDescription>
                 Применяйте ИИ-стили для преобразования ваших мемов и коллажей
               </CardDescription>
@@ -175,7 +175,7 @@ export default function Home() {
 
         <section className="bg-white p-6 rounded-lg shadow-sm">
           <div className="max-w-3xl mx-auto text-center space-y-4">
-            <h2 className="text-xl font-bold">Готовы к творчеству? Просмотрите наши шаблоны</h2>
+            <h2 className="text-xl font-bold text-black">Готовы к творчеству? Просмотрите наши шаблоны</h2>
             <p className="text-slate-600">
               Начните с просмотра нашей коллекции шаблонов мемов или загрузите собственные изображения
             </p>
