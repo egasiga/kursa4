@@ -20,7 +20,7 @@ import sharp from 'sharp';
 const execPromise = promisify(exec);
 
 /**
- * Применяет художественный стиль к изображению с использованием Hugging Face или локальных фильтров
+ * Применяет художественный стиль к изображению с использованием различных методов
  * @param imageBase64 - изображение в формате base64 с префиксом data:image/...;base64,
  * @param styleParams - параметры стиля
  * @returns обработанное изображение в формате base64
@@ -29,16 +29,40 @@ async function applyAiStyle(imageBase64: string, styleParams: any): Promise<stri
   try {
     console.log("Applying style:", styleParams);
     
-    // Используем только Google Magenta (TensorFlow Hub)
-    try {
-      console.log("Используем Google Magenta (TensorFlow Hub)");
-      const { magentaStyleImage } = await import('./magenta_styler');
-      return await magentaStyleImage(imageBase64, styleParams);
-    } catch (magentaError) {
-      console.error('Ошибка при работе с Google Magenta:', magentaError);
-      // В случае ошибки возвращаем исходное изображение
-      return imageBase64;
+    // Установка transformType по умолчанию, если не указан
+    if (!styleParams.transformType) {
+      styleParams.transformType = "magenta";
     }
+    
+    // Выбираем метод стилизации на основе transformType
+    if (styleParams.transformType === "magenta") {
+      try {
+        console.log("Используем Google Magenta (TensorFlow Hub)");
+        const { magentaStyleImage } = await import('./magenta_styler');
+        return await magentaStyleImage(imageBase64, styleParams);
+      } catch (magentaError) {
+        console.error('Ошибка при работе с Google Magenta:', magentaError);
+        // В случае ошибки с Magenta, пробуем альтернативный метод
+        console.log("Используем альтернативный метод стилизации (Jimp)");
+        const { jimpStyleImage } = await import('./jimp_styler');
+        return await jimpStyleImage(imageBase64, styleParams);
+      }
+    } else if (styleParams.transformType === "sharp") {
+      // Используем Sharp для стилизации
+      console.log("Используем Sharp для стилизации");
+      const { applyImageStyles } = await import('./image_filters');
+      return await applyImageStyles(imageBase64, styleParams);
+    } else if (styleParams.transformType === "jimp") {
+      // Используем Jimp для стилизации
+      console.log("Используем Jimp для стилизации");
+      const { jimpStyleImage } = await import('./jimp_styler');
+      return await jimpStyleImage(imageBase64, styleParams);
+    }
+    
+    // Если не указан известный transformType, используем магенту по умолчанию
+    console.log("Используем Google Magenta (TensorFlow Hub) по умолчанию");
+    const { magentaStyleImage } = await import('./magenta_styler');
+    return await magentaStyleImage(imageBase64, styleParams);
   } catch (error) {
     console.error('Критическая ошибка при применении художественного стиля:', error);
     console.error((error as Error).stack);
@@ -934,11 +958,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ styledImage: sourceImage });
       }
 
-      // Process image through artistic filters first
-      const base64Data = sourceImage.replace(/^data:image\/\w+;base64,/, "");
-      const processedImage = await applyArtisticFilters(sourceImage, base64Data, styleParameters);
-      
-      res.json({ styledImage: processedImage });
+      // Проверяем, какой тип трансформации использовать
+      if (!styleParameters.transformType) {
+        // По умолчанию используем Magenta
+        styleParameters.transformType = "magenta";
+      }
+
+      // Если указан transformType "sharp", используем локальные фильтры
+      if (styleParameters.transformType === "sharp") {
+        // Process image through artistic filters (Sharp)
+        const base64Data = sourceImage.replace(/^data:image\/\w+;base64,/, "");
+        const processedImage = await applyArtisticFilters(sourceImage, base64Data, styleParameters);
+        return res.json({ styledImage: processedImage });
+      } else {
+        // Используем AI стилизацию (Magenta, Jimp или другие)
+        const styledImage = await applyAiStyle(sourceImage, styleParameters);
+        return res.json({ styledImage: styledImage });
+      }
     } catch (error) {
       console.error("Error applying style:", error);
       res.status(500).json({ 
