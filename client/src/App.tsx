@@ -7,6 +7,7 @@ import Home from "@/pages/home";
 import MemeGenerator from "@/pages/meme-generator";
 import CollageCreator from "@/pages/collage-creator";
 import Templates from "@/pages/templates";
+import ImageEditor from "@/pages/image-editor";
 import Navbar from "@/components/navbar";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/meme-generator/:id" component={MemeGenerator} />
       <Route path="/collage-creator" component={CollageCreator} />
       <Route path="/templates" component={Templates} />
+      <Route path="/editor" component={ImageEditor} />
       <Route component={NotFound} />
     </Switch>
   );

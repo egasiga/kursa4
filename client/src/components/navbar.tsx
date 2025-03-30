@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Image, PenTool, Grid2X2, LayoutTemplate, Home, Settings } from "lucide-react";
+import { Image, PenTool, Grid2X2, LayoutTemplate, Home, Settings, Wand2 } from "lucide-react";
 
 export default function Navbar() {
   const [location] = useLocation();
@@ -10,6 +10,11 @@ export default function Navbar() {
       title: "Главная",
       href: "/",
       icon: <Home className="w-5 h-5 mr-2" />,
+    },
+    {
+      title: "Редактор",
+      href: "/editor",
+      icon: <Wand2 className="w-5 h-5 mr-2" />,
     },
     {
       title: "Генератор Мемов",

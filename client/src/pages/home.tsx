@@ -150,23 +150,23 @@ export default function Home() {
               <div className="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mb-2 border border-slate-700">
                 <Wand2 className="w-6 h-6 text-white" />
               </div>
-              <CardTitle className="text-white">AI Стилизация</CardTitle>
+              <CardTitle className="text-white">Редактор изображений</CardTitle>
               <CardDescription className="text-slate-300">
-                Применяйте ИИ-стили для преобразования ваших мемов и коллажей
+                Загрузите свои фотографии и улучшите их с помощью AI стилей
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-2">
               <ul className="list-disc pl-5 space-y-1 text-sm text-slate-200">
-                <li>Выбор из различных художественных стилей</li>
-                <li>Превращение мемов в картины маслом</li>
-                <li>Применение комикс-эффектов и пиксель-арта</li>
-                <li>Создание уникальных эстетических стилей</li>
+                <li>Загрузка собственных изображений</li>
+                <li>Применение уникальных стилей искусства</li>
+                <li>Улучшение качества фотографий</li>
+                <li>Сохранение и экспорт результатов</li>
               </ul>
             </CardContent>
             <CardFooter>
-              <Link href="/meme-generator">
+              <Link href="/editor">
                 <Button variant="outline" className="gap-2 text-white bg-slate-700 hover:bg-slate-600">
-                  Попробовать AI стили <ArrowRight className="w-4 h-4" />
+                  Редактировать изображение <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
             </CardFooter>
