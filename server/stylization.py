@@ -32,123 +32,185 @@ def apply_style(img, style_id):
     # Создаем копию изображения для обработки
     styled_img = img.copy()
     
-    # Различные эффекты в зависимости от стиля - ЭКСТРЕМАЛЬНЫЕ ЭФФЕКТЫ В СТИЛЕ GOOGLE MAGENTA
+    # Улучшенные художественные эффекты (в стиле Google Magenta)
     if style_id == '1':  # Звёздная ночь (Ван Гог)
         print("Применяю стиль 'Звёздная ночь (Ван Гог)'")
         
-        # Шаг 1: Насыщенные цвета и контраст как у Ван Гога
-        styled_img = ImageEnhance.Contrast(styled_img).enhance(3.5)
-        styled_img = ImageEnhance.Color(styled_img).enhance(3.8)
+        # Сохраняем копию оригинального изображения для смешивания
+        original_copy = styled_img.copy()
         
-        # Шаг 2: Имитация мазков кистью через размытие и шум
-        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=2))
+        # Шаг 1: Насыщение и контраст (более умеренные значения)
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.8)
+        styled_img = ImageEnhance.Color(styled_img).enhance(1.7)
         
-        # Шаг 3: Выделение краев для создания "контуров" как на картине
-        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE_MORE)
-        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        # Шаг 2: Небольшое размытие для мазков кисти
+        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=1.5))
         
-        # Шаг 4: Инверсия цветовых каналов для создания характерного "звездного" неба
+        # Шаг 3: Выделение краев (один раз, чтобы не пересушить изображение)
+        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE)
+        
+        # Шаг 4: Мягкое смещение цветовых каналов для звездного эффекта
         r, g, b = styled_img.split()
-        styled_img = Image.merge("RGB", (b, g, r))
+        shifted_img = Image.merge("RGB", (g, b, r))
         
-        # Шаг 5: Добавление "завихрений" через изменение цветового баланса
-        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.3)
+        # Шаг 5: Смешиваем с оригиналом для сохранения деталей
+        # Создаем новое изображение из оригинала и стилизованного
+        r1, g1, b1 = original_copy.split()
+        r2, g2, b2 = shifted_img.split()
         
-        # Шаг 6: Пост-обработка для создания более драматичного вида
-        styled_img = ImageOps.posterize(styled_img, 5)
+        # Смешиваем каналы (70% оригинал + 30% стилизация)
+        r = Image.blend(r1, r2, 0.5)
+        g = Image.blend(g1, g2, 0.5)
+        b = Image.blend(b1, b2, 0.5)
+        
+        styled_img = Image.merge("RGB", (r, g, b))
+        
+        # Шаг 6: Финальное усиление контраста для более яркого эффекта
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.4)
         
     elif style_id == '2':  # Крик (Мунк)
         print("Применяю стиль 'Крик (Мунк)'")
         
-        # Шаг 1: Искажение цветов для драматического эффекта
-        styled_img = ImageEnhance.Contrast(styled_img).enhance(3.2)
+        # Сохраняем копию оригинала
+        original_copy = styled_img.copy()
         
-        # Шаг 2: Размытие для создания "плывущего" эффекта
-        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=4))
+        # Шаг 1: Умеренное увеличение контраста
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.6)
         
-        # Шаг 3: Создание контуров и искаженных линий
-        styled_img = styled_img.filter(ImageFilter.FIND_EDGES)
-        styled_img = ImageEnhance.Brightness(styled_img).enhance(1.5)
+        # Шаг 2: Легкое размытие
+        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=2))
         
-        # Шаг 4: Изменение цветового баланса для создания тревожного настроения
+        # Шаг 3: Выделение краев
+        edges = styled_img.filter(ImageFilter.FIND_EDGES)
+        edges = ImageEnhance.Brightness(edges).enhance(1.2)
+        
+        # Шаг 4: Инверсия цветов для тревожного эффекта, но сохраняя оригинальные цвета
         r, g, b = styled_img.split()
-        styled_img = Image.merge("RGB", (r, b, g))
+        inverted = Image.merge("RGB", (g, r, b))
         
-        # Шаг 5: Постеризация для создания упрощенных форм
-        styled_img = ImageOps.posterize(styled_img, 3)
+        # Смешиваем, сохраняя большую часть оригинала
+        r1, g1, b1 = original_copy.split()
+        r2, g2, b2 = inverted.split()
+        r = Image.blend(r1, r2, 0.6)
+        g = Image.blend(g1, g2, 0.6)
+        b = Image.blend(b1, b2, 0.6)
         
-        # Шаг 6: Инверсия части изображения для драматического эффекта
-        styled_img = ImageOps.solarize(styled_img, threshold=128)
+        styled_img = Image.merge("RGB", (r, g, b))
+        
+        # Шаг 5: Добавляем контуры из шага 3, но сохраняем прозрачность
+        r1, g1, b1 = styled_img.split()
+        r2, g2, b2 = edges.split()
+        r = Image.blend(r1, r2, 0.3)
+        g = Image.blend(g1, g2, 0.3)
+        b = Image.blend(b1, b2, 0.3)
+        
+        styled_img = Image.merge("RGB", (r, g, b))
+        
+        # Шаг 6: Финальное улучшение контраста
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.3)
         
     elif style_id == '3':  # Композиция (Кандинский)
         print("Применяю стиль 'Композиция (Кандинский)'")
         
-        # Шаг 1: Увеличение яркости и контрастности для "живых" цветов
-        styled_img = ImageEnhance.Brightness(styled_img).enhance(2.3)
-        styled_img = ImageEnhance.Contrast(styled_img).enhance(3.5)
+        # Сохраняем оригинал
+        original_copy = styled_img.copy()
         
-        # Шаг 2: Создание абстрактных форм через выделение краев
-        styled_img = styled_img.filter(ImageFilter.FIND_EDGES)
+        # Шаг 1: Усиление яркости и контраста для живых цветов
+        styled_img = ImageEnhance.Brightness(styled_img).enhance(1.4)
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.7)
+        styled_img = ImageEnhance.Color(styled_img).enhance(1.8)
         
-        # Шаг 3: Добавление цвета обратно в контуры
-        styled_img = ImageEnhance.Color(styled_img).enhance(4.0)
+        # Шаг 2: Выделение краев для геометрических форм
+        edges = styled_img.filter(ImageFilter.CONTOUR)
+        edges = ImageEnhance.Contrast(edges).enhance(1.5)
         
-        # Шаг 4: Эффект геометрических форм через постеризацию
-        styled_img = ImageOps.posterize(styled_img, 4)
+        # Шаг 3: Создаем постеризованное изображение для цветовых блоков
+        posterized = ImageOps.posterize(styled_img, 5)
         
-        # Шаг 5: Смешение цветовых каналов для создания абстрактного эффекта
-        r, g, b = styled_img.split()
-        styled_img = Image.merge("RGB", (b, g, r))
+        # Шаг 4: Смешиваем оригинал, постеризованный вариант и края
+        r1, g1, b1 = original_copy.split()
+        r2, g2, b2 = posterized.split()
+        r3, g3, b3 = edges.split()
         
-        # Шаг 6: Инверсия части изображения для контраста
-        styled_img = ImageOps.invert(styled_img)
+        # Смешиваем в пропорции 40% оригинал + 40% постеризация + 20% края
+        r = Image.blend(Image.blend(r1, r2, 0.5), r3, 0.3)
+        g = Image.blend(Image.blend(g1, g2, 0.5), g3, 0.3)
+        b = Image.blend(Image.blend(b1, b2, 0.5), b3, 0.3)
+        
+        styled_img = Image.merge("RGB", (r, g, b))
+        
+        # Шаг 5: Финальное улучшение насыщенности цветов
+        styled_img = ImageEnhance.Color(styled_img).enhance(1.4)
         
     elif style_id == '4':  # Кубизм (Пикассо)
         print("Применяю стиль 'Кубизм (Пикассо)'") 
         
-        # Шаг 1: Создание резких граней между областями
-        styled_img = styled_img.filter(ImageFilter.FIND_EDGES)
-        styled_img = ImageEnhance.Contrast(styled_img).enhance(3.8)
+        # Сохраняем оригинал
+        original_copy = styled_img.copy()
         
-        # Шаг 2: Уменьшение цветовой палитры для кубистического эффекта
-        styled_img = ImageOps.posterize(styled_img, 3)
+        # Шаг 1: Выделение краев
+        edges = styled_img.filter(ImageFilter.FIND_EDGES)
+        edges = ImageEnhance.Contrast(edges).enhance(1.8)
         
-        # Шаг 3: Смещение цветовых каналов для создания "разобранного" вида
-        r, g, b = styled_img.split()
-        styled_img = Image.merge("RGB", (g, r, b))
+        # Шаг 2: Создаем постеризованную версию для упрощенных форм
+        posterized = ImageOps.posterize(styled_img, 4)
         
-        # Шаг 4: Подчеркивание контуров для геометрических форм
-        styled_img = styled_img.filter(ImageFilter.CONTOUR)
-        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        # Шаг 3: Создаем контурную версию
+        contours = styled_img.filter(ImageFilter.CONTOUR)
         
-        # Шаг 5: Инверсия части изображения для создания раздробленного вида
-        styled_img = ImageOps.solarize(styled_img, threshold=64)
+        # Шаг 4: Смешиваем все эффекты
+        r1, g1, b1 = original_copy.split()
+        r2, g2, b2 = edges.split()
+        r3, g3, b3 = posterized.split()
+        r4, g4, b4 = contours.split()
         
-        # Шаг 6: Финальная пост-обработка для усиления эффекта
-        styled_img = ImageEnhance.Sharpness(styled_img).enhance(2.0)
+        # Смешиваем в пропорции 30% оригинал + 30% края + 20% постеризация + 20% контуры
+        r = Image.blend(Image.blend(r1, r2, 0.5), Image.blend(r3, r4, 0.5), 0.5)
+        g = Image.blend(Image.blend(g1, g2, 0.5), Image.blend(g3, g4, 0.5), 0.5)
+        b = Image.blend(Image.blend(b1, b2, 0.5), Image.blend(b3, b4, 0.5), 0.5)
+        
+        styled_img = Image.merge("RGB", (r, g, b))
+        
+        # Шаг 5: Финальный контраст
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.4)
         
     elif style_id == '5':  # Водяные лилии (Моне)
         print("Применяю стиль 'Водяные лилии (Моне)'")
         
-        # Шаг 1: Мягкое размытие для имитации импрессионизма
-        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=4.0))
+        # Сохраняем оригинал
+        original_copy = styled_img.copy()
         
-        # Шаг 2: Насыщение цветов как у Моне
-        styled_img = ImageEnhance.Color(styled_img).enhance(3.5)
-        styled_img = ImageEnhance.Brightness(styled_img).enhance(1.8)
+        # Шаг 1: Легкое размытие для импрессионизма
+        blurred = styled_img.filter(ImageFilter.GaussianBlur(radius=2.0))
         
-        # Шаг 3: Смешение цветовых каналов для создания эффекта отражений на воде
-        r, g, b = styled_img.split()
-        styled_img = Image.merge("RGB", (g, b, r))
+        # Шаг 2: Усиление цветов
+        colored = ImageEnhance.Color(styled_img).enhance(1.6)
+        colored = ImageEnhance.Brightness(colored).enhance(1.2)
         
-        # Шаг 4: Мягкая постеризация для создания "пятен" краски
-        styled_img = ImageOps.posterize(styled_img, 6)
+        # Шаг 3: Смешиваем размытое и цветное изображения
+        r1, g1, b1 = blurred.split()
+        r2, g2, b2 = colored.split()
         
-        # Шаг 5: Размытие краев для создания "плавающего" эффекта
-        styled_img = styled_img.filter(ImageFilter.SMOOTH_MORE)
-        styled_img = styled_img.filter(ImageFilter.SMOOTH_MORE)
+        r = Image.blend(r1, r2, 0.6)
+        g = Image.blend(g1, g2, 0.6)
+        b = Image.blend(b1, b2, 0.6)
         
-        # Шаг 6: Увеличение яркости светлых участков для эффекта солнечного света
+        styled_img = Image.merge("RGB", (r, g, b))
+        
+        # Шаг 4: Легкий эффект постеризации для "мазков"
+        posterized = ImageOps.posterize(styled_img, 7)
+        
+        # Шаг 5: Смешиваем с оригиналом для сохранения деталей
+        r1, g1, b1 = original_copy.split()
+        r2, g2, b2 = posterized.split()
+        
+        r = Image.blend(r1, r2, 0.5)
+        g = Image.blend(g1, g2, 0.5)
+        b = Image.blend(b1, b2, 0.5)
+        
+        styled_img = Image.merge("RGB", (r, g, b))
+        
+        # Шаг 6: Финальное усиление контраста
         styled_img = ImageEnhance.Contrast(styled_img).enhance(1.3)
     
     return styled_img
