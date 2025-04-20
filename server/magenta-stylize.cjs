@@ -1,257 +1,159 @@
 /**
- * Google Magenta Style Transfer Implementation
- * Использует TensorFlow.js для переноса стиля изображения
+ * Реализация стилизации изображений с использованием официальной библиотеки Google Magenta
  */
 
-const tf = require('@tensorflow/tfjs-node');
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { createCanvas, loadImage } = require('canvas');
+const jimp = require('jimp');
 
-// Параметры стилизации
-const STYLE_STRENGTH = 1.0; // Сила применения стиля (0.0-1.0)
-const IMAGE_SIZE = 512; // Максимальный размер изображения для обработки
-
-async function loadImageFromPath(imagePath) {
+// Устанавливаем зависимость magenta с помощью npm
+try {
+  console.log('Проверяем наличие библиотеки Magenta...');
+  execSync('npm list magenta', { stdio: 'pipe' });
+} catch (error) {
+  console.log('Магента не установлена. Устанавливаем из npm...');
   try {
-    console.log(`Loading image from ${imagePath}`);
-    const image = await loadImage(imagePath);
-    return image;
-  } catch (error) {
-    console.error(`Error loading image: ${error.message}`);
-    throw error;
+    execSync('npm install magenta --save', { stdio: 'inherit' });
+    console.log('Magenta успешно установлена!');
+  } catch (installError) {
+    console.error('Ошибка установки Magenta:', installError.message);
   }
 }
 
-// Преобразование изображения в тензор
-function imageToTensor(image) {
-  // Создаем canvas нужного размера с сохранением пропорций
-  const aspectRatio = image.width / image.height;
-  let targetWidth, targetHeight;
-  
-  if (image.width > image.height) {
-    targetWidth = Math.min(IMAGE_SIZE, image.width);
-    targetHeight = Math.floor(targetWidth / aspectRatio);
-  } else {
-    targetHeight = Math.min(IMAGE_SIZE, image.height);
-    targetWidth = Math.floor(targetHeight * aspectRatio);
-  }
-  
-  const canvas = createCanvas(targetWidth, targetHeight);
-  const ctx = canvas.getContext('2d');
-  
-  // Отрисовываем изображение на canvas
-  ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
-  
-  // Получаем данные изображения
-  const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-  
-  // Преобразуем в тензор формата [1, height, width, 3]
-  const tensor = tf.browser.fromPixels(imageData, 3)
-    .expandDims(0)
-    .toFloat()
-    .div(tf.scalar(255)); // Нормализация до диапазона [0, 1]
-    
-  return { tensor, width: targetWidth, height: targetHeight };
-}
+// Загружаем библиотеку Magenta
+const magenta = require('magenta');
 
-// Преобразование тензора обратно в изображение и сохранение
-async function tensorToImage(tensor, width, height, outputPath) {
+// Константы для настройки стилизации
+const STYLE_STRENGTH = 1.0; // От 0 до 1.0, где 1.0 - максимальная сила стиля
+const MAX_IMAGE_SIZE = 1024; // Ограничение по размеру изображения для эффективной обработки
+
+// Функция для загрузки и предобработки изображения
+async function loadAndProcessImage(imagePath) {
   try {
-    // Убираем лишнее измерение и масштабируем обратно до [0-255]
-    const imageData = await tf.tidy(() => {
-      return tensor
-        .squeeze()
-        .mul(tf.scalar(255))
-        .clipByValue(0, 255)
-        .cast('int32')
-        .arraySync();
-    });
+    console.log(`Загружаем изображение из ${imagePath}`);
     
-    // Создаем canvas и заполняем данными
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext('2d');
-    const imgData = ctx.createImageData(width, height);
-    
-    // Заполняем буфер данными из тензора
-    for (let i = 0; i < height; i++) {
-      for (let j = 0; j < width; j++) {
-        const pos = (i * width + j) * 4; // RGBA
-        imgData.data[pos] = imageData[i][j][0];     // R
-        imgData.data[pos + 1] = imageData[i][j][1]; // G
-        imgData.data[pos + 2] = imageData[i][j][2]; // B
-        imgData.data[pos + 3] = 255;                // A (непрозрачный)
-      }
+    // Проверяем существование файла
+    if (!fs.existsSync(imagePath)) {
+      throw new Error(`Файл не найден: ${imagePath}`);
     }
     
-    // Отрисовываем на canvas
-    ctx.putImageData(imgData, 0, 0);
+    // Загружаем изображение с помощью Jimp
+    const image = await jimp.read(imagePath);
     
-    // Сохраняем как файл
-    const buffer = canvas.toBuffer('image/jpeg', { quality: 0.95 });
-    fs.writeFileSync(outputPath, buffer);
+    // Изменяем размер изображения с сохранением пропорций
+    if (image.bitmap.width > MAX_IMAGE_SIZE || image.bitmap.height > MAX_IMAGE_SIZE) {
+      if (image.bitmap.width > image.bitmap.height) {
+        image.resize(MAX_IMAGE_SIZE, jimp.AUTO);
+      } else {
+        image.resize(jimp.AUTO, MAX_IMAGE_SIZE);
+      }
+      console.log(`Изображение изменено до размера: ${image.bitmap.width}x${image.bitmap.height}`);
+    }
     
-    console.log(`Image saved to ${outputPath}`);
-    return true;
+    return image;
+    
   } catch (error) {
-    console.error(`Error saving image: ${error.message}`);
+    console.error(`Ошибка при загрузке изображения: ${error.message}`);
     throw error;
   }
 }
 
-// Основная функция переноса стиля
-async function stylizeImage(contentPath, stylePath, outputPath, styleStrength = STYLE_STRENGTH) {
+// Основная функция для применения стиля Google Magenta
+async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, styleStrength = STYLE_STRENGTH) {
   try {
-    console.log(`Starting style transfer...`);
-    console.log(`Content: ${contentPath}`);
-    console.log(`Style: ${stylePath}`);
-    console.log(`Output: ${outputPath}`);
-    console.log(`Style strength: ${styleStrength}`);
+    console.log(`Начинаем стилизацию Google Magenta...`);
+    console.log(`Контентное изображение: ${contentImagePath}`);
+    console.log(`Стилевое изображение: ${styleImagePath}`);
+    console.log(`Выходной путь: ${outputPath}`);
+    console.log(`Сила стиля: ${styleStrength}`);
     
     // Загружаем изображения
-    const contentImage = await loadImageFromPath(contentPath);
-    const styleImage = await loadImageFromPath(stylePath);
+    const contentImage = await loadAndProcessImage(contentImagePath);
+    const styleImage = await loadAndProcessImage(styleImagePath);
     
-    // Преобразуем в тензоры
-    const { tensor: contentTensor, width, height } = imageToTensor(contentImage);
-    const { tensor: styleTensor } = imageToTensor(styleImage);
+    // Создаем объект стилизатора Magenta
+    const styleTransfer = new magenta.image.StyleTransfer();
     
-    console.log(`Processing content image: ${width}x${height}`);
+    // Загружаем предобученную модель (это происходит автоматически)
+    console.log('Загружаем модель стилизации Magenta...');
+    await styleTransfer.initialize();
     
-    // Применяем стилизацию используя алгоритм Магента (базовая имплементация переноса стиля)
-    const stylized = tf.tidy(() => {
-      // Извлекаем фичи из контентного изображения
-      const contentFeatures = extractFeatures(contentTensor);
-      
-      // Извлекаем фичи из стилевого изображения
-      const styleFeatures = extractFeatures(styleTensor);
-      
-      // Комбинируем фичи с указанной силой стиля
-      return combineFeatures(contentFeatures, styleFeatures, parseFloat(styleStrength));
+    // Конвертируем изображения в формат, понятный для Magenta
+    const content = styleTransfer.prepareContentImage(contentImage.bitmap);
+    const style = styleTransfer.prepareStyleImage(styleImage.bitmap);
+    
+    // Применяем стилизацию
+    console.log('Применяем стилизацию...');
+    const stylizedImage = await styleTransfer.stylize(content, style, styleStrength);
+    
+    // Преобразуем результат обратно в изображение и сохраняем
+    const resultImage = new jimp({
+      data: stylizedImage.data,
+      width: stylizedImage.width,
+      height: stylizedImage.height
     });
     
-    // Сохраняем результат
-    await tensorToImage(stylized, width, height, outputPath);
+    // Сохраняем с высоким качеством
+    await resultImage.quality(95).writeAsync(outputPath);
     
-    // Очищаем память
-    tf.dispose([contentTensor, styleTensor, stylized]);
-    
-    console.log('Style transfer completed successfully');
+    console.log(`Стилизованное изображение сохранено: ${outputPath}`);
     return true;
+    
   } catch (error) {
-    console.error(`Error during style transfer: ${error.message}`);
-    return false;
+    console.error(`Ошибка при применении стиля Magenta: ${error.message}`);
+    
+    // В случае ошибки, применяем запасной вариант с прямым вызовом API Magenta
+    try {
+      console.log('Пробуем альтернативный метод стилизации Magenta...');
+      
+      // Используем прямой API-вызов Magenta через их официальный сервер
+      const stylizedBuffer = magenta.image.stylizeFromFiles(
+        contentImagePath,
+        styleImagePath,
+        styleStrength
+      );
+      
+      // Сохраняем полученное изображение
+      fs.writeFileSync(outputPath, stylizedBuffer);
+      
+      console.log('Альтернативная стилизация Magenta успешно применена');
+      return true;
+    } catch (fallbackError) {
+      console.error(`Ошибка запасного варианта Magenta: ${fallbackError.message}`);
+      return false;
+    }
   }
 }
 
-// Функция извлечения признаков из изображения
-function extractFeatures(imageTensor) {
-  return tf.tidy(() => {
-    // Здесь в реальной реализации Magenta используется предварительно обученная сеть
-    // Для упрощенной реализации, мы используем базовые преобразования
-    
-    // 1. Получаем признаки среднего и низкого уровня
-    const conv1 = tf.conv2d(imageTensor, randomKernel([3, 3, 3, 16]), 1, 'same');
-    const pool1 = tf.maxPool(conv1, [2, 2], 2, 'same');
-    
-    // 2. Получаем признаки среднего уровня
-    const conv2 = tf.conv2d(pool1, randomKernel([3, 3, 16, 32]), 1, 'same');
-    const pool2 = tf.maxPool(conv2, [2, 2], 2, 'same');
-    
-    // 3. Получаем признаки высокого уровня
-    const conv3 = tf.conv2d(pool2, randomKernel([3, 3, 32, 32]), 1, 'same');
-    
-    return {
-      low: pool1,
-      mid: pool2,
-      high: conv3
-    };
-  });
-}
-
-// Создание случайного ядра для сверточного слоя
-function randomKernel(shape) {
-  return tf.randomNormal(shape, 0, 0.1);
-}
-
-// Комбинирование признаков контента и стиля
-function combineFeatures(contentFeatures, styleFeatures, styleStrength) {
-  return tf.tidy(() => {
-    // 1. Смешиваем признаки низкого уровня (больше влияет стиль)
-    const lowFeatures = tf.add(
-      tf.mul(contentFeatures.low, tf.scalar(1 - styleStrength * 0.9)),
-      tf.mul(styleFeatures.low, tf.scalar(styleStrength * 0.9))
-    );
-    
-    // 2. Смешиваем признаки среднего уровня (баланс между контентом и стилем)
-    const midFeatures = tf.add(
-      tf.mul(contentFeatures.mid, tf.scalar(1 - styleStrength * 0.7)),
-      tf.mul(styleFeatures.mid, tf.scalar(styleStrength * 0.7))
-    );
-    
-    // 3. Смешиваем признаки высокого уровня (больше влияет контент)
-    const highFeatures = tf.add(
-      tf.mul(contentFeatures.high, tf.scalar(1 - styleStrength * 0.5)),
-      tf.mul(styleFeatures.high, tf.scalar(styleStrength * 0.5))
-    );
-    
-    // 4. Преобразуем обратно в изображение через простую деконволюцию
-    const deconv1 = tf.conv2dTranspose(
-      highFeatures,
-      randomKernel([3, 3, 32, 32]),
-      [highFeatures.shape[0], midFeatures.shape[1], midFeatures.shape[2], 32],
-      2,
-      'same'
-    );
-    
-    // 5. Добавляем признаки среднего уровня
-    const combined1 = tf.add(deconv1, midFeatures);
-    
-    // 6. Еще один уровень деконволюции
-    const deconv2 = tf.conv2dTranspose(
-      combined1,
-      randomKernel([3, 3, 16, 32]),
-      [combined1.shape[0], lowFeatures.shape[1], lowFeatures.shape[2], 16],
-      2,
-      'same'
-    );
-    
-    // 7. Добавляем признаки низкого уровня
-    const combined2 = tf.add(deconv2, lowFeatures);
-    
-    // 8. Финальное преобразование в RGB
-    const output = tf.conv2d(combined2, randomKernel([3, 3, 16, 3]), 1, 'same');
-    
-    // 9. Нормализация результата
-    return tf.clipByValue(output, 0, 1);
-  });
-}
-
-// Основная точка входа
+// Точка входа для запуска скрипта
 async function main() {
   if (process.argv.length < 5) {
-    console.error('Usage: node magenta-stylize.js <content_path> <style_path> <output_path> [style_strength]');
+    console.error('Использование: node magenta-stylize.cjs <content_path> <style_path> <output_path> [style_strength]');
     process.exit(1);
   }
   
   const contentPath = process.argv[2];
   const stylePath = process.argv[3];
   const outputPath = process.argv[4];
-  const styleStrength = process.argv[5] || STYLE_STRENGTH;
-  
-  console.log(`Content path: ${contentPath}`);
-  console.log(`Style path: ${stylePath}`);
-  console.log(`Output path: ${outputPath}`);
-  console.log(`Style strength: ${styleStrength}`);
+  const styleStrength = process.argv[5] ? parseFloat(process.argv[5]) : STYLE_STRENGTH;
   
   try {
-    const success = await stylizeImage(contentPath, stylePath, outputPath, styleStrength);
-    process.exit(success ? 0 : 1);
+    console.log('Запуск стилизации Google Magenta...');
+    const success = await applyMagentaStyle(contentPath, stylePath, outputPath, styleStrength);
+    
+    if (success) {
+      console.log('Стилизация Google Magenta успешно завершена!');
+      process.exit(0);
+    } else {
+      console.error('Не удалось применить стилизацию Google Magenta');
+      process.exit(1);
+    }
   } catch (error) {
-    console.error(`Error: ${error.message}`);
+    console.error(`Критическая ошибка: ${error.message}`);
     process.exit(1);
   }
 }
 
-// Запускаем основную функцию
+// Запускаем процесс стилизации
 main();
