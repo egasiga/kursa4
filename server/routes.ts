@@ -349,65 +349,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fs.writeFileSync(contentPath, Buffer.from(base64Data, 'base64'));
       console.log(`Original image saved to ${contentPath}`);
       
-      // Сначала пробуем использовать Google Magenta
-      let usePython = false;
+      // Используем нейронную сеть для переноса стиля (настоящая AI-стилизация)
+      console.log(`Запускаем нейросетевую стилизацию (Neural Style Transfer):`);
+      console.log(`1. Входное изображение: ${contentPath}`);
+      console.log(`2. Файл стиля: ${stylePath} (существует: ${fs.existsSync(stylePath)})`);
+      console.log(`3. Выходное изображение: ${outputPath}`);
+      
       try {
-        console.log(`Запускаем стилизацию с помощью Google Magenta:`);
-        console.log(`1. Входное изображение: ${contentPath}`);
-        console.log(`2. Файл стиля: ${stylePath} (существует: ${fs.existsSync(stylePath)})`);
-        console.log(`3. Выходное изображение: ${outputPath}`);
-        
-        const magentaProcess = spawn('node', [
-          'server/magenta-stylize.cjs',
+        // Запускаем Python скрипт для нейронного переноса стиля
+        const neuralStyleProcess = spawn('python', [
+          'server/neural_style_transfer.py',
           contentPath,
           stylePath,
-          outputPath,
-          '0.8' // Сила стиля (от 0 до 1)
+          outputPath
         ]);
         
-        let magentaError = '';
-        let magentaOutput = '';
+        let neuralStyleOutput = '';
+        let neuralStyleError = '';
         
-        magentaProcess.stdout.on('data', (data) => {
-          magentaOutput += data.toString();
-          console.log(`Magenta output: ${data}`);
+        neuralStyleProcess.stdout.on('data', (data) => {
+          neuralStyleOutput += data.toString();
+          console.log(`Neural Style output: ${data}`);
         });
         
-        magentaProcess.stderr.on('data', (data) => {
-          magentaError += data.toString();
-          console.error(`Magenta error: ${data}`);
+        neuralStyleProcess.stderr.on('data', (data) => {
+          neuralStyleError += data.toString();
+          console.error(`Neural Style error: ${data}`);
         });
         
-        // Ждем завершения выполнения Magenta
+        // Ждем завершения выполнения нейронного переноса стиля
         await new Promise<void>((resolve, reject) => {
-          magentaProcess.on('close', (code) => {
+          neuralStyleProcess.on('close', (code) => {
             if (code !== 0) {
-              console.error(`Magenta process exited with code ${code}`);
-              console.error(`Error: ${magentaError}`);
-              // Не отклоняем промис в случае ошибки Magenta, просто отмечаем, что нужно использовать Python
-              usePython = true;
-              resolve();
+              console.error(`Neural Style process exited with code ${code}`);
+              console.error(`Error: ${neuralStyleError}`);
+              
+              // Если нейросетевая стилизация не удалась, переключаемся на запасной вариант
+              console.log('Переключаемся на запасной метод стилизации...');
+              try {
+                // Запускаем запасной скрипт Python для простой стилизации
+                const pythonProcess = spawn('python', [
+                  'server/stylization.py',
+                  contentPath,
+                  stylePath,
+                  outputPath
+                ]);
+                
+                let pythonOutput = '';
+                let pythonError = '';
+                
+                pythonProcess.stdout.on('data', (data) => {
+                  pythonOutput += data.toString();
+                  console.log(`Python fallback output: ${data}`);
+                });
+                
+                pythonProcess.stderr.on('data', (data) => {
+                  pythonError += data.toString();
+                  console.error(`Python fallback error: ${data}`);
+                });
+                
+                // Ждем завершения запасного варианта
+                pythonProcess.on('close', (fallbackCode) => {
+                  if (fallbackCode !== 0) {
+                    console.error(`Python fallback process exited with code ${fallbackCode}`);
+                    console.error(`Fallback error: ${pythonError}`);
+                    
+                    // Если даже запасной вариант не сработал, копируем оригинальное изображение
+                    fs.copyFileSync(contentPath, outputPath);
+                    resolve();
+                  } else {
+                    console.log('Запасной метод стилизации успешно применен!');
+                    resolve();
+                  }
+                });
+              } catch (fallbackError) {
+                console.error('Error executing fallback stylization:', fallbackError);
+                fs.copyFileSync(contentPath, outputPath);
+                resolve();
+              }
             } else {
-              console.log('Google Magenta успешно применил стиль!');
+              console.log('Нейросетевой перенос стиля успешно завершен!');
               resolve();
             }
           });
         });
       } catch (error) {
-        console.error('Error executing Magenta script:', error);
-        usePython = true;
-      }
-      
-      // Если Google Magenta не смог обработать изображение, используем Python как запасной вариант
-      if (usePython) {
-        console.log('Используем Python для стилизации (запасной вариант)');
+        console.error('Error executing Neural Style Transfer:', error);
+        
+        // Если произошла ошибка при запуске скрипта, используем запасной вариант Python
         try {
-          console.log(`Запускаем Python скрипт со следующими аргументами:`);
-          console.log(`1. Скрипт: server/stylization.py`);
-          console.log(`2. Входное изображение: ${contentPath}`);
-          console.log(`3. Файл стиля: ${stylePath} (существует: ${fs.existsSync(stylePath)})`);
-          console.log(`4. Выходное изображение: ${outputPath}`);
+          console.log('Используем запасной вариант стилизации...');
           
+          // Запускаем запасной Python скрипт для обработки изображения
           const pythonProcess = spawn('python', [
             'server/stylization.py',
             contentPath,
@@ -415,36 +448,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             outputPath
           ]);
           
-          let pythonError = '';
-          let pythonOutput = '';
-          
-          pythonProcess.stdout.on('data', (data) => {
-            pythonOutput += data.toString();
-            console.log(`Python output: ${data}`);
-          });
-          
-          pythonProcess.stderr.on('data', (data) => {
-            pythonError += data.toString();
-            console.error(`Python error: ${data}`);
-          });
-          
-          // Ждем завершения выполнения скрипта
+          // Дожидаемся завершения запасного скрипта
           await new Promise<void>((resolve, reject) => {
             pythonProcess.on('close', (code) => {
               if (code !== 0) {
-                console.error(`Python process exited with code ${code}`);
-                console.error(`Error: ${pythonError}`);
-                reject(new Error(`Python process failed with code ${code}: ${pythonError}`));
-              } else {
-                console.log('Python успешно применил стиль!');
-                resolve();
+                console.error(`Fallback process failed with code ${code}`);
+                fs.copyFileSync(contentPath, outputPath);
               }
+              resolve();
             });
           });
-        } catch (error) {
-          console.error('Error executing Python script:', error);
-          
-          // Если стилизация не удалась, возвращаем оригинальное изображение
+        } catch (fallbackError) {
+          console.error('Error executing fallback script:', fallbackError);
           fs.copyFileSync(contentPath, outputPath);
         }
       }
