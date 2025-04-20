@@ -32,36 +32,59 @@ def apply_style(img, style_id):
     # Создаем копию изображения для обработки
     styled_img = img.copy()
     
-    # Различные эффекты в зависимости от стиля
+    # Различные эффекты в зависимости от стиля - УСИЛЕННЫЕ ЭФФЕКТЫ
     if style_id == '1':  # Звёздная ночь (Ван Гог)
-        # Увеличиваем контраст и насыщенность, добавляем синий оттенок
-        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.5)
-        styled_img = ImageEnhance.Color(styled_img).enhance(1.8)
-        # Размытие для эффекта мазков
-        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=1))
+        print("Применяю стиль 'Звёздная ночь (Ван Гог)'")
+        # Экстремальное увеличение контраста и насыщенности, добавляем синий оттенок
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(3.0)
+        styled_img = ImageEnhance.Color(styled_img).enhance(3.5)
+        # Размытие для эффекта мазков и выделение краев
+        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=2))
+        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        # Применяем эффект поворота каналов для создания свечения
+        r, g, b = styled_img.split()
+        styled_img = Image.merge("RGB", (b, r, g))
         
     elif style_id == '2':  # Крик (Мунк)
-        # Искажение цветов, увеличение красного, размытие
-        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.3)
-        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=2))
-        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE)
+        print("Применяю стиль 'Крик (Мунк)'")
+        # Сильное искажение цветов, контрастность, размытие
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(2.5)
+        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=3))
+        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        # Инвертируем цвета для драматического эффекта
+        r, g, b = styled_img.split()
+        styled_img = Image.merge("RGB", (g, b, r))
         
     elif style_id == '3':  # Композиция (Кандинский)
-        # Увеличиваем яркость и контраст, добавляем четкость
-        styled_img = ImageEnhance.Brightness(styled_img).enhance(1.1)
-        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.4)
+        print("Применяю стиль 'Композиция (Кандинский)'")
+        # Экстремальный контраст, яркость и выделение краев
+        styled_img = ImageEnhance.Brightness(styled_img).enhance(1.8)
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(2.8)
+        # Двойное применение фильтра краев для абстрактного эффекта
         styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        styled_img = styled_img.filter(ImageFilter.CONTOUR)
         
     elif style_id == '4':  # Кубизм (Пикассо)
-        # Эффект постеризации, увеличение контраста
+        print("Применяю стиль 'Кубизм (Пикассо)'") 
+        # Эффект постеризации, контраст и выделение краев
         styled_img = styled_img.filter(ImageFilter.FIND_EDGES)
-        styled_img = ImageEnhance.Contrast(styled_img).enhance(1.2)
+        styled_img = ImageEnhance.Contrast(styled_img).enhance(2.5)
+        styled_img = styled_img.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        styled_img = styled_img.filter(ImageFilter.CONTOUR)
+        # Инвертируем некоторые каналы для абстрактного эффекта
+        r, g, b = styled_img.split()
+        styled_img = Image.merge("RGB", (b, r, g))
         
     elif style_id == '5':  # Водяные лилии (Моне)
-        # Мягкое размытие, увеличение яркости и насыщенности
-        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=1.5))
-        styled_img = ImageEnhance.Brightness(styled_img).enhance(1.1)
-        styled_img = ImageEnhance.Color(styled_img).enhance(1.4)
+        print("Применяю стиль 'Водяные лилии (Моне)'")
+        # Сильное размытие, яркость и насыщенность
+        styled_img = styled_img.filter(ImageFilter.GaussianBlur(radius=3.0))
+        styled_img = ImageEnhance.Brightness(styled_img).enhance(1.5)
+        styled_img = ImageEnhance.Color(styled_img).enhance(2.8)
+        # Мягкий эффект акварели
+        styled_img = styled_img.filter(ImageFilter.SMOOTH_MORE)
     
     return styled_img
 

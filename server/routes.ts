@@ -351,6 +351,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Запускаем Python скрипт для обработки изображения
       try {
+        console.log(`Запускаем Python скрипт со следующими аргументами:`);
+        console.log(`1. Скрипт: server/stylization.py`);
+        console.log(`2. Входное изображение: ${contentPath}`);
+        console.log(`3. Файл стиля: ${stylePath} (существует: ${fs.existsSync(stylePath)})`);
+        console.log(`4. Выходное изображение: ${outputPath}`);
+        
         const pythonProcess = spawn('python', [
           'server/stylization.py',
           contentPath,
@@ -359,6 +365,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]);
         
         let pythonError = '';
+        let pythonOutput = '';
+        
+        pythonProcess.stdout.on('data', (data) => {
+          pythonOutput += data.toString();
+          console.log(`Python output: ${data}`);
+        });
         
         pythonProcess.stderr.on('data', (data) => {
           pythonError += data.toString();
