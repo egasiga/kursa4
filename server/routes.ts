@@ -349,48 +349,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fs.writeFileSync(contentPath, Buffer.from(base64Data, 'base64'));
       console.log(`Original image saved to ${contentPath}`);
       
-      // Запускаем Python скрипт для обработки изображения
+      // Запускаем процесс стилизации с помощью Google Magenta
       try {
-        console.log(`Запускаем Python скрипт со следующими аргументами:`);
-        console.log(`1. Скрипт: server/stylization.py`);
-        console.log(`2. Входное изображение: ${contentPath}`);
-        console.log(`3. Файл стиля: ${stylePath} (существует: ${fs.existsSync(stylePath)})`);
-        console.log(`4. Выходное изображение: ${outputPath}`);
+        console.log(`Запускаем стилизацию с помощью Google Magenta:`);
+        console.log(`1. Входное изображение: ${contentPath}`);
+        console.log(`2. Файл стиля: ${stylePath} (существует: ${fs.existsSync(stylePath)})`);
+        console.log(`3. Выходное изображение: ${outputPath}`);
         
-        const pythonProcess = spawn('python', [
-          'server/stylization.py',
+        const magentaStylerProcess = spawn('node', [
+          'server/magenta-stylize.js',
           contentPath,
           stylePath,
-          outputPath
+          outputPath,
+          '1.0' // сила стиля (от 0 до 1)
         ]);
         
-        let pythonError = '';
-        let pythonOutput = '';
+        let magentaError = '';
+        let magentaOutput = '';
         
-        pythonProcess.stdout.on('data', (data) => {
-          pythonOutput += data.toString();
-          console.log(`Python output: ${data}`);
+        magentaStylerProcess.stdout.on('data', (data) => {
+          magentaOutput += data.toString();
+          console.log(`Magenta output: ${data}`);
         });
         
-        pythonProcess.stderr.on('data', (data) => {
-          pythonError += data.toString();
-          console.error(`Python error: ${data}`);
+        magentaStylerProcess.stderr.on('data', (data) => {
+          magentaError += data.toString();
+          console.error(`Magenta error: ${data}`);
         });
         
-        // Ждем завершения выполнения скрипта
+        // Ждем завершения выполнения процесса стилизации
         await new Promise<void>((resolve, reject) => {
-          pythonProcess.on('close', (code) => {
+          magentaStylerProcess.on('close', (code) => {
             if (code !== 0) {
-              console.error(`Python process exited with code ${code}`);
-              console.error(`Error: ${pythonError}`);
-              reject(new Error(`Python process failed with code ${code}: ${pythonError}`));
+              console.error(`Magenta process exited with code ${code}`);
+              console.error(`Error: ${magentaError}`);
+              reject(new Error(`Magenta process failed with code ${code}: ${magentaError}`));
             } else {
+              console.log('Magenta завершил работу успешно!');
               resolve();
             }
           });
         });
       } catch (error) {
-        console.error('Error executing Python script:', error);
+        console.error('Error executing Magenta script:', error);
         
         // Если стилизация не удалась, возвращаем оригинальное изображение
         fs.copyFileSync(contentPath, outputPath);
