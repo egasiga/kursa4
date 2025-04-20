@@ -337,8 +337,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Генерируем временные имена файлов
       const timestamp = Date.now();
       const contentPath = `./temp/content_${timestamp}.jpg`;
-      const stylePath = `./styles/${styleId.replace('style', '')}.jpg`;
+      const styleNumber = styleId.replace('style', '');
+      const stylePath = `./styles/${styleNumber}.jpg`;
       const outputPath = `./temp/stylized_${timestamp}.jpg`;
+      
+      console.log(`Путь к файлу стиля: ${stylePath}, styleId: ${styleId}, styleNumber: ${styleNumber}`);
+      console.log(`Файл стиля существует: ${fs.existsSync(stylePath)}`);
       
       // Сохраняем исходное изображение с высоким качеством
       const base64Data = image.replace(/^data:image\/\w+;base64,/, "");

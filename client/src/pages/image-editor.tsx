@@ -294,17 +294,20 @@ export default function ImageEditor() {
         }
       });
 
-      if (response && response.imageUrl) {
+      console.log("Ответ от сервера:", response);
+
+      if (response && response.styledImageUrl) {
         // Загружаем стилизованное изображение
-        setUploadedImage(response.imageUrl);
+        setUploadedImage(response.styledImageUrl);
         setIsStyleApplied(true);
-        renderCanvas(response.imageUrl);
+        renderCanvas(response.styledImageUrl);
         
         toast({
           title: "Успешно!",
           description: "Стиль успешно применен к изображению",
         });
       } else {
+        console.error("Неверный формат ответа:", response);
         throw new Error('Не удалось получить стилизованное изображение');
       }
     } catch (error) {
@@ -392,7 +395,7 @@ export default function ImageEditor() {
                     Скачать
                   </Button>
                   
-                  <SocialShare canvasRef={canvasRef.current} />
+                  {canvasRef.current && <SocialShare canvasRef={canvasRef.current} />}
                 </div>
               </div>
               
