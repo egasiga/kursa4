@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TextEditor from "@/components/text-editor";
-import MemeImageEditor from "@/components/image-editor";
+import MemeImageEditor from "@/components/meme-image-editor";
 import SocialShare from "@/components/social-share";
 import { AiStyle } from "@/components/ai-style-selector";
 import ImageStyleEditor from "@/components/image-editor";
@@ -378,7 +378,7 @@ export default function MemeGenerator() {
           <Card>
             <CardContent className="p-6 flex flex-col items-center justify-center min-h-[500px]">
               {selectedTemplate ? (
-                <ImageEditor
+                <MemeImageEditor
                   template={selectedTemplate}
                   textContent={textContent}
                   filters={filters}
