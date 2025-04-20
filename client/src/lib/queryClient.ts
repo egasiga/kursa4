@@ -7,17 +7,46 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+/**
+ * Улучшенная функция для API-запросов, которая разрешает проблему с чтением body stream
+ * @param method HTTP метод (GET, POST и т.д.)
+ * @param url URL запроса
+ * @param body Опциональное тело запроса (для POST, PUT и др.)
+ * @returns Промис с результатом в формате JSON
+ */
 export async function apiRequest(
+  method: string,
   url: string,
-  options?: RequestInit,
+  body?: any
 ): Promise<any> {
-  const res = await fetch(url, {
-    ...options,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  return res.json().catch(() => res);
+  try {
+    // Настраиваем параметры запроса
+    const options: RequestInit = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: "include",
+    };
+    
+    // Добавляем тело запроса для не-GET методов
+    if (method !== 'GET' && body) {
+      options.body = JSON.stringify(body);
+    }
+    
+    // Выполняем запрос
+    const res = await fetch(url, options);
+    
+    // Проверяем статус ответа
+    await throwIfResNotOk(res);
+    
+    // Преобразуем ответ в JSON и возвращаем
+    const jsonResult = await res.json();
+    return jsonResult;
+  } catch (error) {
+    console.error(`API request error (${method} ${url}):`, error);
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

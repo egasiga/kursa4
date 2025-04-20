@@ -53,11 +53,11 @@ export default function MemeGenerator() {
 
 
 
-  // Save meme mutation
+  // Save meme mutation с обновленным API клиентом
   const saveMutation = useMutation({
     mutationFn: async (memeData: any) => {
-      const response = await apiRequest("POST", "/api/memes", memeData);
-      return response.json();
+      // Используем обновленный apiRequest, который сразу возвращает данные в формате JSON
+      return await apiRequest("POST", "/api/memes", memeData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/memes"] });
@@ -308,20 +308,19 @@ export default function MemeGenerator() {
       // Получаем данные текущего изображения с канваса
       const imageData = canvasRef.toDataURL("image/png");
       
-      // Отправляем запрос на стилизацию
-      const response = await apiRequest("POST", "/api/stylize", {
+      // Отправляем запрос на стилизацию с обновленным apiRequest
+      const stylizationResult = await apiRequest("POST", "/api/stylize", {
         image: imageData,
         styleId: selectedStyle.id
       });
       
-      // Распаковываем JSON из Response
-      const typedResponse = await response.json();
-      if (typedResponse && typedResponse.styledImageUrl) {
+      // Теперь обработка данных гораздо проще, так как apiRequest возвращает JSON
+      if (stylizationResult && stylizationResult.styledImageUrl) {
         console.log("Stylized image received successfully");
         // Обновляем шаблон с новым изображением высокого качества
         setSelectedTemplate({
           ...selectedTemplate,
-          imageUrl: typedResponse.styledImageUrl
+          imageUrl: stylizationResult.styledImageUrl
         });
         setIsStyleApplied(true);
         
@@ -330,7 +329,7 @@ export default function MemeGenerator() {
           description: `Successfully applied '${selectedStyle.name}' style to your image.`
         });
       } else {
-        throw new Error("Failed to apply style");
+        throw new Error("Failed to apply style - no styled image URL received");
       }
     } catch (error) {
       console.error("Error applying style:", error);

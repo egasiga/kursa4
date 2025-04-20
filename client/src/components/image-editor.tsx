@@ -33,9 +33,8 @@ export default function ImageStyleEditor({
     const fetchStyles = async () => {
       try {
         setLoading(true);
-        // Сначала попробуем загрузить из API
-        const response = await apiRequest("GET", '/api/styles');
-        const data = await response.json();
+        // Сначала попробуем загрузить из API используя обновленный apiRequest
+        const data = await apiRequest("GET", '/api/styles');
         
         if (data && Array.isArray(data) && data.length > 0) {
           setStyles(data as AiStyle[]);
