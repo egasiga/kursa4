@@ -8,13 +8,9 @@ const path = require('path');
 const Jimp = require('jimp');
 
 // Подключаем TensorFlow.js Node для ускорения работы модели
-try {
-  require('@tensorflow/tfjs-node');
-  console.log('TensorFlow.js Node успешно загружен');
-} catch (error) {
-  console.warn('Ошибка загрузки TensorFlow.js Node:', error.message);
-  console.warn('Стилизация будет работать медленнее');
-}
+const tf = require('@tensorflow/tfjs-node');
+const canvas = require('canvas');
+console.log('TensorFlow.js Node and Canvas successfully loaded');
 
 // Устанавливаем зависимость @magenta/image с помощью npm (это правильная библиотека для стилизации изображений)
 try {
