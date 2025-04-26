@@ -29,6 +29,74 @@ export default function MemeImageEditor({
   const [draggingText, setDraggingText] = useState<{index: number, startX: number, startY: number} | null>(null);
   const [scale, setScale] = useState(1);
 
+  // Отрисовка текста на изображении (отдельная функция)
+  const renderImage = useRef<(img: HTMLImageElement) => void>((img) => {});
+  
+  // Настраиваем функцию отрисовки изображения
+  useEffect(() => {
+    // Инициализируем функцию отрисовки, которая будет использоваться при загрузке изображения
+    renderImage.current = (img: HTMLImageElement) => {
+      if (!canvasRef.current) return;
+      
+      // Определяем максимальные размеры для canvas
+      const maxWidth = 450;
+      const maxHeight = 600;
+      
+      // Вычисляем масштаб для изображения
+      let newWidth = img.width;
+      let newHeight = img.height;
+      const imageRatio = img.width / img.height;
+      
+      if (img.width > maxWidth) {
+        newWidth = maxWidth;
+        newHeight = newWidth / imageRatio;
+      }
+      
+      if (newHeight > maxHeight) {
+        newHeight = maxHeight;
+        newWidth = newHeight * imageRatio;
+      }
+      
+      // Устанавливаем новые размеры canvas
+      const calculatedWidth = Math.round(newWidth);
+      const calculatedHeight = Math.round(newHeight);
+      
+      canvasRef.current.width = calculatedWidth;
+      canvasRef.current.height = calculatedHeight;
+      setCanvasSize({ width: calculatedWidth, height: calculatedHeight });
+      
+      // Вычисляем масштаб для дальнейшего использования
+      setScale(calculatedWidth / img.width);
+      
+      console.log('Новые размеры canvas:', calculatedWidth, 'x', calculatedHeight);
+      
+      // Получаем контекст canvas и отрисовываем изображение
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        // Очищаем canvas
+        ctx.clearRect(0, 0, calculatedWidth, calculatedHeight);
+        
+        // Отрисовываем изображение напрямую, без фильтров для начала
+        ctx.drawImage(img, 0, 0, calculatedWidth, calculatedHeight);
+        
+        // Затем применяем фильтры если нужно
+        if (filters.brightness !== 100 || filters.contrast !== 100 || filters.saturation !== 100) {
+          applyFiltersToImage(ctx, img, filters, calculatedWidth, calculatedHeight);
+        }
+        
+        console.log('Изображение отрисовано на canvas');
+        
+        // Отрисовываем текст
+        setTimeout(() => {
+          onTextRender();
+          
+          // Уведомляем родительский компонент о готовности canvas
+          onCanvasReady(canvasRef.current!);
+        }, 50);
+      }
+    };
+  }, [filters, onCanvasReady, onTextRender, textContent]);
+  
   // Загрузка и отрисовка изображения
   useEffect(() => {
     if (!template || !template.imageUrl) {
@@ -47,65 +115,7 @@ export default function MemeImageEditor({
         
         img.onload = () => {
           console.log('Изображение загружено, размеры:', img.width, 'x', img.height);
-          
-          // Обновляем размеры canvas в зависимости от размера изображения
-          if (canvasRef.current) {
-            // Определяем максимальные размеры для canvas
-            const maxWidth = 450;
-            const maxHeight = 600;
-            
-            // Вычисляем масштаб для изображения
-            let newWidth = img.width;
-            let newHeight = img.height;
-            const imageRatio = img.width / img.height;
-            
-            if (img.width > maxWidth) {
-              newWidth = maxWidth;
-              newHeight = newWidth / imageRatio;
-            }
-            
-            if (newHeight > maxHeight) {
-              newHeight = maxHeight;
-              newWidth = newHeight * imageRatio;
-            }
-            
-            // Устанавливаем новые размеры canvas
-            const calculatedWidth = Math.round(newWidth);
-            const calculatedHeight = Math.round(newHeight);
-            
-            canvasRef.current.width = calculatedWidth;
-            canvasRef.current.height = calculatedHeight;
-            setCanvasSize({ width: calculatedWidth, height: calculatedHeight });
-            
-            // Вычисляем масштаб для дальнейшего использования
-            setScale(calculatedWidth / img.width);
-            
-            console.log('Новые размеры canvas:', calculatedWidth, 'x', calculatedHeight);
-            
-            // Получаем контекст canvas и отрисовываем изображение
-            const ctx = canvasRef.current.getContext('2d');
-            if (ctx) {
-              // Очищаем canvas
-              ctx.clearRect(0, 0, calculatedWidth, calculatedHeight);
-              
-              // Отрисовываем изображение напрямую, без фильтров для начала
-              ctx.drawImage(img, 0, 0, calculatedWidth, calculatedHeight);
-              
-              // Затем применяем фильтры если нужно
-              if (filters.brightness !== 100 || filters.contrast !== 100 || filters.saturation !== 100) {
-                applyFiltersToImage(ctx, img, filters, calculatedWidth, calculatedHeight);
-              }
-              
-              console.log('Изображение отрисовано на canvas');
-              
-              // Отрисовываем текст
-              onTextRender();
-              
-              // Уведомляем родительский компонент о готовности canvas
-              onCanvasReady(canvasRef.current);
-            }
-          }
-          
+          renderImage.current(img);
           setLoading(false);
         };
         
@@ -125,7 +135,7 @@ export default function MemeImageEditor({
     };
 
     loadTemplateImage();
-  }, [template, template.imageUrl, filters, onCanvasReady, onTextRender]);
+  }, [template, template.imageUrl]);
 
   // Обработчики для перетаскивания текста
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {

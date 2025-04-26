@@ -41,12 +41,12 @@ export default function MemeGenerator() {
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
 
   // Fetch templates
-  const { data: templates, isLoading: isLoadingTemplates } = useQuery({
+  const { data: templates, isLoading: isLoadingTemplates } = useQuery<MemeTemplate[]>({
     queryKey: ["/api/templates"],
   });
 
   // Fetch specific template if ID is provided
-  const { data: templateData, isLoading: isLoadingTemplate } = useQuery({
+  const { data: templateData, isLoading: isLoadingTemplate } = useQuery<MemeTemplate>({
     queryKey: ["/api/templates", id],
     enabled: !!id,
   });
@@ -80,17 +80,8 @@ export default function MemeGenerator() {
   useEffect(() => {
     // When template data is loaded, set it as the selected template
     if (templateData) {
-      // Типизируем входные данные и создаем объект MemeTemplate
-      const template: MemeTemplate = {
-        ...templateData,
-        id: templateData.id || 0,
-        imageUrl: templateData.imageUrl || '',
-        name: templateData.name || '',
-        userId: templateData.userId || null,
-        isPublic: templateData.isPublic || null,
-        textAreas: templateData.textAreas || [],
-        createdAt: templateData.createdAt || null
-      };
+      // Создаем объект MemeTemplate из полученных данных
+      const template: MemeTemplate = templateData as MemeTemplate;
       
       setSelectedTemplate(template);
       
@@ -305,18 +296,32 @@ export default function MemeGenerator() {
         setOriginalImageUrl(selectedTemplate.imageUrl);
       }
       
-      // Получаем данные текущего изображения с канваса
-      const imageData = canvasRef.toDataURL("image/png");
+      // Получаем данные текущего изображения с канваса в высоком качестве
+      const imageData = canvasRef.toDataURL("image/jpeg", 0.95);
       
-      // Отправляем запрос на стилизацию с обновленным apiRequest
-      const stylizationResult = await apiRequest("POST", "/api/stylize", {
-        image: imageData,
-        styleId: selectedStyle.id
+      console.log("Отправка запроса стилизации, styleId:", selectedStyle.id);
+      
+      // Отправляем запрос на стилизацию с правильным форматированием
+      const response = await fetch("/api/stylize", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: imageData,
+          styleId: selectedStyle.id
+        })
       });
       
-      // Теперь обработка данных гораздо проще, так как apiRequest возвращает JSON
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API запрос завершился с ошибкой: ${response.status} ${errorText}`);
+      }
+      
+      const stylizationResult = await response.json();
+      
       if (stylizationResult && stylizationResult.styledImageUrl) {
-        console.log("Stylized image received successfully");
+        console.log("Стилизованное изображение успешно получено");
         // Обновляем шаблон с новым изображением высокого качества
         setSelectedTemplate({
           ...selectedTemplate,
@@ -324,17 +329,22 @@ export default function MemeGenerator() {
         });
         setIsStyleApplied(true);
         
+        // Запускаем отрисовку текста сразу после обновления изображения
+        setTimeout(() => {
+          renderTextOnCanvas();
+        }, 100);
+        
         toast({
-          title: "Style applied",
-          description: `Successfully applied '${selectedStyle.name}' style to your image.`
+          title: "Стиль применен",
+          description: `Успешно применен стиль '${selectedStyle.name}' к вашему изображению.`
         });
       } else {
-        throw new Error("Failed to apply style - no styled image URL received");
+        throw new Error("Не удалось применить стиль - не получен URL стилизованного изображения");
       }
     } catch (error) {
-      console.error("Error applying style:", error);
+      console.error("Ошибка применения стиля:", error);
       toast({
-        title: "Style application failed",
+        title: "Ошибка применения стиля",
         description: String(error),
         variant: "destructive"
       });
