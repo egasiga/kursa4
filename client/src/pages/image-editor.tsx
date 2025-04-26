@@ -282,16 +282,10 @@ export default function ImageEditor() {
       const canvasDataUrl = canvas.toDataURL('image/jpeg', 0.95);
       console.log("Получили данные изображения в формате base64, длина:", canvasDataUrl.length);
       
-      // Отправляем данные на сервер напрямую, без FormData
-      const response = await apiRequest('/api/stylize', {
-        method: 'POST',
-        body: JSON.stringify({
-          image: canvasDataUrl,
-          styleId: selectedStyle.id
-        }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      // Отправляем данные на сервер с использованием apiRequest с правильным порядком аргументов
+      const response = await apiRequest('POST', '/api/stylize', {
+        image: canvasDataUrl,
+        styleId: selectedStyle.id
       });
 
       console.log("Ответ от сервера:", response);
