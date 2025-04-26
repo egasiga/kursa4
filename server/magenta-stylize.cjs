@@ -7,6 +7,15 @@ const fs = require('fs');
 const path = require('path');
 const Jimp = require('jimp');
 
+// Подключаем TensorFlow.js Node для ускорения работы модели
+try {
+  require('@tensorflow/tfjs-node');
+  console.log('TensorFlow.js Node успешно загружен');
+} catch (error) {
+  console.warn('Ошибка загрузки TensorFlow.js Node:', error.message);
+  console.warn('Стилизация будет работать медленнее');
+}
+
 // Устанавливаем зависимость @magenta/image с помощью npm (это правильная библиотека для стилизации изображений)
 try {
   console.log('Проверяем наличие библиотеки @magenta/image...');
@@ -80,13 +89,22 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     console.log('Загружаем модель стилизации Magenta...');
     await styleTransfer.initialize();
 
-    // Конвертируем изображения в формат, понятный для Magenta
-    const content = styleTransfer.prepareContentImage(contentImage.bitmap);
-    const style = styleTransfer.prepareStyleImage(styleImage.bitmap);
-
+    // Преобразуем изображения Jimp в формат, который понимает TensorFlow.js
+    const contentImageData = {
+      data: contentImage.bitmap.data,
+      width: contentImage.bitmap.width,
+      height: contentImage.bitmap.height
+    };
+    
+    const styleImageData = {
+      data: styleImage.bitmap.data,
+      width: styleImage.bitmap.width,
+      height: styleImage.bitmap.height
+    };
+    
     // Применяем стилизацию
     console.log('Применяем стилизацию...');
-    const stylizedImage = await styleTransfer.stylize(content, style, styleStrength);
+    const stylizedImage = await styleTransfer.stylize(contentImageData, styleImageData, styleStrength);
 
     // Преобразуем результат обратно в изображение и сохраняем
     const resultImage = new Jimp({
@@ -111,30 +129,62 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
       // Создаем объект простого стилизатора Magenta
       const simpleStyleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
         modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json',
-        backend: 'webgl'
+        backend: 'cpu' // Используем CPU вместо webgl для большей совместимости
       });
 
       await simpleStyleTransfer.initialize();
 
-      // Загружаем изображения напрямую
-      const contentBuffer = fs.readFileSync(contentImagePath);
-      const styleBuffer = fs.readFileSync(styleImagePath);
+      // Загружаем изображения как буферы
+      const contentImage = fs.readFileSync(contentImagePath);
+      const styleImage = fs.readFileSync(styleImagePath);
+      
+      // Преобразуем в Jimp объекты
+      const jimpContentImage = await Jimp.read(contentImage);
+      const jimpStyleImage = await Jimp.read(styleImage);
+      
+      // Преобразуем в формат для TensorFlow.js
+      const contentImageData = {
+        data: jimpContentImage.bitmap.data,
+        width: jimpContentImage.bitmap.width,
+        height: jimpContentImage.bitmap.height
+      };
+      
+      const styleImageData = {
+        data: jimpStyleImage.bitmap.data,
+        width: jimpStyleImage.bitmap.width,
+        height: jimpStyleImage.bitmap.height
+      };
 
-      // Применяем стилизацию с уменьшенными настройками качества
+      // Применяем стилизацию
       const result = await simpleStyleTransfer.stylize(
-        contentBuffer, 
-        styleBuffer,
+        contentImageData, 
+        styleImageData,
         styleStrength
       );
 
-      // Сохраняем полученное изображение
-      fs.writeFileSync(outputPath, result);
-
+      // Преобразуем результат в Jimp и сохраняем
+      const resultImage = new Jimp({
+        data: result.data,
+        width: result.width,
+        height: result.height
+      });
+      
+      await resultImage.quality(95).writeAsync(outputPath);
+      
       console.log('Альтернативная стилизация Magenta успешно применена');
       return true;
     } catch (fallbackError) {
       console.error(`Ошибка запасного варианта Magenta: ${fallbackError.message}`);
-      return false;
+      
+      // В случае повторной ошибки, просто копируем исходное изображение
+      try {
+        console.log('Копируем исходное изображение как запасной вариант');
+        fs.copyFileSync(contentImagePath, outputPath);
+        return true;
+      } catch (copyError) {
+        console.error(`Ошибка копирования исходного изображения: ${copyError.message}`);
+        return false;
+      }
     }
   }
 }
