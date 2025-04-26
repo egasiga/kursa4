@@ -5,7 +5,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const Jimp = require('jimp');
+const Jimp = require('jimp/dist/jimp.js');
 
 // Устанавливаем зависимость @magenta/image с помощью npm (это правильная библиотека для стилизации изображений)
 try {
@@ -33,15 +33,19 @@ const MAX_IMAGE_SIZE = 1024; // Ограничение по размеру из�
 async function loadAndProcessImage(imagePath) {
   try {
     console.log(`Загружаем изображение из ${imagePath}`);
-    
+
     // Проверяем существование файла
     if (!fs.existsSync(imagePath)) {
       throw new Error(`Файл не найден: ${imagePath}`);
     }
-    
+
     // Загружаем изображение с помощью Jimp
-    const image = await Jimp.read(imagePath);
-    
+    const image = await new Promise((resolve, reject) => {
+      Jimp.read(imagePath)
+        .then(img => resolve(img))
+        .catch(err => reject(err));
+    });
+
     // Изменяем размер изображения с сохранением пропорций
     if (image.bitmap.width > MAX_IMAGE_SIZE || image.bitmap.height > MAX_IMAGE_SIZE) {
       if (image.bitmap.width > image.bitmap.height) {
@@ -51,9 +55,9 @@ async function loadAndProcessImage(imagePath) {
       }
       console.log(`Изображение изменено до размера: ${image.bitmap.width}x${image.bitmap.height}`);
     }
-    
+
     return image;
-    
+
   } catch (error) {
     console.error(`Ошибка при загрузке изображения: ${error.message}`);
     throw error;
@@ -68,68 +72,68 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     console.log(`Стилевое изображение: ${styleImagePath}`);
     console.log(`Выходной путь: ${outputPath}`);
     console.log(`Сила стиля: ${styleStrength}`);
-    
+
     // Загружаем изображения
     const contentImage = await loadAndProcessImage(contentImagePath);
     const styleImage = await loadAndProcessImage(styleImagePath);
-    
+
     // Создаем объект стилизатора Magenta
     const styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork();
-    
+
     // Загружаем предобученную модель (это происходит автоматически)
     console.log('Загружаем модель стилизации Magenta...');
     await styleTransfer.initialize();
-    
+
     // Конвертируем изображения в формат, понятный для Magenta
     const content = styleTransfer.prepareContentImage(contentImage.bitmap);
     const style = styleTransfer.prepareStyleImage(styleImage.bitmap);
-    
+
     // Применяем стилизацию
     console.log('Применяем стилизацию...');
     const stylizedImage = await styleTransfer.stylize(content, style, styleStrength);
-    
+
     // Преобразуем результат обратно в изображение и сохраняем
     const resultImage = new Jimp({
       data: stylizedImage.data,
       width: stylizedImage.width,
       height: stylizedImage.height
     });
-    
+
     // Сохраняем с высоким качеством
     await resultImage.quality(95).writeAsync(outputPath);
-    
+
     console.log(`Стилизованное изображение сохранено: ${outputPath}`);
     return true;
-    
+
   } catch (error) {
     console.error(`Ошибка при применении стиля Magenta: ${error.message}`);
-    
+
     // В случае ошибки, применяем запасной вариант с более простым подходом
     try {
       console.log('Пробуем альтернативный метод стилизации Magenta...');
-      
+
       // Создаем объект простого стилизатора Magenta
       const simpleStyleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
         modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json',
         backend: 'webgl'
       });
-      
+
       await simpleStyleTransfer.initialize();
-      
+
       // Загружаем изображения напрямую
       const contentBuffer = fs.readFileSync(contentImagePath);
       const styleBuffer = fs.readFileSync(styleImagePath);
-      
+
       // Применяем стилизацию с уменьшенными настройками качества
       const result = await simpleStyleTransfer.stylize(
         contentBuffer, 
         styleBuffer,
         styleStrength
       );
-      
+
       // Сохраняем полученное изображение
       fs.writeFileSync(outputPath, result);
-      
+
       console.log('Альтернативная стилизация Magenta успешно применена');
       return true;
     } catch (fallbackError) {
@@ -145,16 +149,16 @@ async function main() {
     console.error('Использование: node magenta-stylize.cjs <content_path> <style_path> <output_path> [style_strength]');
     process.exit(1);
   }
-  
+
   const contentPath = process.argv[2];
   const stylePath = process.argv[3];
   const outputPath = process.argv[4];
   const styleStrength = process.argv[5] ? parseFloat(process.argv[5]) : STYLE_STRENGTH;
-  
+
   try {
     console.log('Запуск стилизации Google Magenta...');
     const success = await applyMagentaStyle(contentPath, stylePath, outputPath, styleStrength);
-    
+
     if (success) {
       console.log('Стилизация Google Magenta успешно завершена!');
       process.exit(0);
