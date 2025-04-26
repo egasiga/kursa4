@@ -7,10 +7,18 @@ const fs = require('fs');
 const path = require('path');
 const Jimp = require('jimp');
 
-// Подключаем TensorFlow.js Node для ускорения работы модели
-const tf = require('@tensorflow/tfjs-node');
+// Загружаем Canvas для работы с изображениями в Node.js (требуется для TensorFlow.js)
 const canvas = require('canvas');
-console.log('TensorFlow.js Node and Canvas successfully loaded');
+const { createCanvas, loadImage } = canvas;
+
+// Подключаем TensorFlow.js Node для ускорения работы модели
+try {
+  require('@tensorflow/tfjs-node');
+  console.log('TensorFlow.js Node and Canvas successfully loaded');
+} catch (error) {
+  console.warn('Ошибка загрузки TensorFlow.js Node:', error.message);
+  console.warn('Стилизация будет работать медленнее');
+}
 
 // Устанавливаем зависимость @magenta/image с помощью npm (это правильная библиотека для стилизации изображений)
 try {
@@ -34,10 +42,48 @@ const magentaImage = require('@magenta/image');
 const STYLE_STRENGTH = 1.0; // От 0 до 1.0, где 1.0 - максимальная сила стиля
 const MAX_IMAGE_SIZE = 1024; // Ограничение по размеру изображения для эффективной обработки
 
-// Функция для загрузки и предобработки изображения
+// Функция для загрузки изображения с помощью Canvas API (совместимо с TensorFlow.js)
+async function loadCanvasImage(imagePath) {
+  try {
+    console.log(`Загружаем изображение с помощью Canvas из ${imagePath}`);
+    
+    // Загружаем изображение
+    const image = await loadImage(imagePath);
+    
+    // Создаем canvas с размерами изображения
+    let width = image.width;
+    let height = image.height;
+    
+    // Изменяем размер изображения с сохранением пропорций
+    if (width > MAX_IMAGE_SIZE || height > MAX_IMAGE_SIZE) {
+      if (width > height) {
+        height = Math.round(height * (MAX_IMAGE_SIZE / width));
+        width = MAX_IMAGE_SIZE;
+      } else {
+        width = Math.round(width * (MAX_IMAGE_SIZE / height));
+        height = MAX_IMAGE_SIZE;
+      }
+      console.log(`Изображение изменено до размера: ${width}x${height}`);
+    }
+    
+    // Создаем canvas нужного размера
+    const cnv = createCanvas(width, height);
+    const ctx = cnv.getContext('2d');
+    
+    // Рисуем изображение на canvas с новыми размерами
+    ctx.drawImage(image, 0, 0, width, height);
+    
+    return cnv;
+  } catch (error) {
+    console.error(`Ошибка при загрузке изображения через Canvas: ${error.message}`);
+    throw error;
+  }
+}
+
+// Функция для загрузки и предобработки изображения (резервный метод через Jimp)
 async function loadAndProcessImage(imagePath) {
   try {
-    console.log(`Загружаем изображение из ${imagePath}`);
+    console.log(`Загружаем изображение через Jimp из ${imagePath}`);
 
     // Проверяем существование файла
     if (!fs.existsSync(imagePath)) {
@@ -60,7 +106,7 @@ async function loadAndProcessImage(imagePath) {
     return image;
 
   } catch (error) {
-    console.error(`Ошибка при загрузке изображения: ${error.message}`);
+    console.error(`Ошибка при загрузке изображения через Jimp: ${error.message}`);
     throw error;
   }
 }
@@ -74,9 +120,9 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     console.log(`Выходной путь: ${outputPath}`);
     console.log(`Сила стиля: ${styleStrength}`);
 
-    // Загружаем изображения
-    const contentImage = await loadAndProcessImage(contentImagePath);
-    const styleImage = await loadAndProcessImage(styleImagePath);
+    // Загружаем изображения с помощью Canvas API
+    const contentCanvasImage = await loadCanvasImage(contentImagePath);
+    const styleCanvasImage = await loadCanvasImage(styleImagePath);
 
     // Создаем объект стилизатора Magenta
     const styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork();
@@ -84,23 +130,10 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     // Загружаем предобученную модель (это происходит автоматически)
     console.log('Загружаем модель стилизации Magenta...');
     await styleTransfer.initialize();
-
-    // Преобразуем изображения Jimp в формат, который понимает TensorFlow.js
-    const contentImageData = {
-      data: contentImage.bitmap.data,
-      width: contentImage.bitmap.width,
-      height: contentImage.bitmap.height
-    };
     
-    const styleImageData = {
-      data: styleImage.bitmap.data,
-      width: styleImage.bitmap.width,
-      height: styleImage.bitmap.height
-    };
-    
-    // Применяем стилизацию
+    // Применяем стилизацию с Canvas изображениями
     console.log('Применяем стилизацию...');
-    const stylizedImage = await styleTransfer.stylize(contentImageData, styleImageData, styleStrength);
+    const stylizedImage = await styleTransfer.stylize(contentCanvasImage, styleCanvasImage, styleStrength);
 
     // Преобразуем результат обратно в изображение и сохраняем
     const resultImage = new Jimp({
@@ -122,53 +155,37 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     try {
       console.log('Пробуем альтернативный метод стилизации Magenta...');
 
-      // Создаем объект простого стилизатора Magenta
+      // Создаем объект стилизатора с явно указанным бэкендом CPU
       const simpleStyleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
         modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json',
-        backend: 'cpu' // Используем CPU вместо webgl для большей совместимости
+        backend: 'cpu'
       });
 
       await simpleStyleTransfer.initialize();
-
-      // Загружаем изображения как буферы
-      const contentImage = fs.readFileSync(contentImagePath);
-      const styleImage = fs.readFileSync(styleImagePath);
       
-      // Преобразуем в Jimp объекты
-      const jimpContentImage = await Jimp.read(contentImage);
-      const jimpStyleImage = await Jimp.read(styleImage);
-      
-      // Преобразуем в формат для TensorFlow.js
-      const contentImageData = {
-        data: jimpContentImage.bitmap.data,
-        width: jimpContentImage.bitmap.width,
-        height: jimpContentImage.bitmap.height
-      };
-      
-      const styleImageData = {
-        data: jimpStyleImage.bitmap.data,
-        width: jimpStyleImage.bitmap.width,
-        height: jimpStyleImage.bitmap.height
-      };
-
-      // Применяем стилизацию
-      const result = await simpleStyleTransfer.stylize(
-        contentImageData, 
-        styleImageData,
-        styleStrength
-      );
-
-      // Преобразуем результат в Jimp и сохраняем
-      const resultImage = new Jimp({
-        data: result.data,
-        width: result.width,
-        height: result.height
-      });
-      
-      await resultImage.quality(95).writeAsync(outputPath);
-      
-      console.log('Альтернативная стилизация Magenta успешно применена');
-      return true;
+      // Повторная попытка загрузки и стилизации с Canvas
+      try {
+        const contentCanvas = await loadCanvasImage(contentImagePath);
+        const styleCanvas = await loadCanvasImage(styleImagePath);
+        
+        // Применяем стилизацию
+        const result = await simpleStyleTransfer.stylize(contentCanvas, styleCanvas, styleStrength);
+        
+        // Преобразуем результат в Jimp и сохраняем
+        const resultImage = new Jimp({
+          data: result.data,
+          width: result.width,
+          height: result.height
+        });
+        
+        await resultImage.quality(95).writeAsync(outputPath);
+        
+        console.log('Альтернативная стилизация Magenta успешно применена');
+        return true;
+      } catch (canvasError) {
+        console.error(`Ошибка при стилизации с Canvas: ${canvasError.message}`);
+        throw canvasError;
+      }
     } catch (fallbackError) {
       console.error(`Ошибка запасного варианта Magenta: ${fallbackError.message}`);
       
