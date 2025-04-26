@@ -16,6 +16,9 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/meme-generator" component={MemeGenerator} />
       <Route path="/meme-generator/:id" component={MemeGenerator} />
+      {/* Добавляем синоним для страницы генератора мемов */}
+      <Route path="/memes" component={MemeGenerator} />
+      <Route path="/memes/:id" component={MemeGenerator} />
       <Route path="/collage-creator" component={CollageCreator} />
       <Route path="/templates" component={Templates} />
       <Route path="/editor" component={ImageEditor} />
