@@ -5,7 +5,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const Jimp = require('jimp/dist/jimp.js');
+const Jimp = require('jimp');
 
 // Устанавливаем зависимость @magenta/image с помощью npm (это правильная библиотека для стилизации изображений)
 try {
