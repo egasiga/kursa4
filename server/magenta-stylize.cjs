@@ -5,7 +5,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const jimp = require('jimp');
+const Jimp = require('jimp');
 
 // Устанавливаем зависимость @magenta/image с помощью npm (это правильная библиотека для стилизации изображений)
 try {
@@ -40,14 +40,14 @@ async function loadAndProcessImage(imagePath) {
     }
     
     // Загружаем изображение с помощью Jimp
-    const image = await jimp.read(imagePath);
+    const image = await Jimp.read(imagePath);
     
     // Изменяем размер изображения с сохранением пропорций
     if (image.bitmap.width > MAX_IMAGE_SIZE || image.bitmap.height > MAX_IMAGE_SIZE) {
       if (image.bitmap.width > image.bitmap.height) {
-        image.resize(MAX_IMAGE_SIZE, jimp.AUTO);
+        image.resize(MAX_IMAGE_SIZE, Jimp.AUTO);
       } else {
-        image.resize(jimp.AUTO, MAX_IMAGE_SIZE);
+        image.resize(Jimp.AUTO, MAX_IMAGE_SIZE);
       }
       console.log(`Изображение изменено до размера: ${image.bitmap.width}x${image.bitmap.height}`);
     }
@@ -74,7 +74,7 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     const styleImage = await loadAndProcessImage(styleImagePath);
     
     // Создаем объект стилизатора Magenta
-    const styleTransfer = new magentaImage.ArbitraryStyleTransfer();
+    const styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork();
     
     // Загружаем предобученную модель (это происходит автоматически)
     console.log('Загружаем модель стилизации Magenta...');
@@ -89,7 +89,7 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     const stylizedImage = await styleTransfer.stylize(content, style, styleStrength);
     
     // Преобразуем результат обратно в изображение и сохраняем
-    const resultImage = new jimp({
+    const resultImage = new Jimp({
       data: stylizedImage.data,
       width: stylizedImage.width,
       height: stylizedImage.height
@@ -109,7 +109,7 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
       console.log('Пробуем альтернативный метод стилизации Magenta...');
       
       // Создаем объект простого стилизатора Magenta
-      const simpleStyleTransfer = new magentaImage.ArbitraryStyleTransfer({
+      const simpleStyleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
         modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json',
         backend: 'webgl'
       });
