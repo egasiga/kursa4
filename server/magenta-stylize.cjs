@@ -7,22 +7,23 @@ const fs = require('fs');
 const path = require('path');
 const jimp = require('jimp');
 
-// Устанавливаем зависимость magenta с помощью npm
+// Устанавливаем зависимость @magenta/image с помощью npm (это правильная библиотека для стилизации изображений)
 try {
-  console.log('Проверяем наличие библиотеки Magenta...');
-  execSync('npm list magenta', { stdio: 'pipe' });
+  console.log('Проверяем наличие библиотеки @magenta/image...');
+  execSync('npm list @magenta/image', { stdio: 'pipe' });
+  console.log('@magenta/image уже установлен');
 } catch (error) {
-  console.log('Магента не установлена. Устанавливаем из npm...');
+  console.log('@magenta/image не установлен. Устанавливаем из npm...');
   try {
-    execSync('npm install magenta --save', { stdio: 'inherit' });
-    console.log('Magenta успешно установлена!');
+    execSync('npm install @magenta/image --save', { stdio: 'inherit' });
+    console.log('@magenta/image успешно установлен!');
   } catch (installError) {
-    console.error('Ошибка установки Magenta:', installError.message);
+    console.error('Ошибка установки @magenta/image:', installError.message);
   }
 }
 
-// Загружаем библиотеку Magenta
-const magenta = require('magenta');
+// Загружаем библиотеку Magenta Image для работы с изображениями
+const magentaImage = require('@magenta/image');
 
 // Константы для настройки стилизации
 const STYLE_STRENGTH = 1.0; // От 0 до 1.0, где 1.0 - максимальная сила стиля
