@@ -5,7 +5,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const Jimp = require('jimp');
+const Jimp = require('jimp/dist/jimp.js');
 
 // Устанавливаем зависимость @magenta/image с помощью npm (это правильная библиотека для стилизации изображений)
 try {
@@ -40,11 +40,7 @@ async function loadAndProcessImage(imagePath) {
     }
 
     // Загружаем изображение с помощью Jimp
-    const image = await new Promise((resolve, reject) => {
-      Jimp.read(imagePath)
-        .then(img => resolve(img))
-        .catch(err => reject(err));
-    });
+    const image = await Jimp.read(imagePath);
 
     // Изменяем размер изображения с сохранением пропорций
     if (image.bitmap.width > MAX_IMAGE_SIZE || image.bitmap.height > MAX_IMAGE_SIZE) {
