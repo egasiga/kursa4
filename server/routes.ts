@@ -385,45 +385,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.error(`Google Magenta process exited with code ${code}`);
               console.error(`Error: ${magentaError}`);
               
-              // Если Google Magenta не удалась, используем запасной вариант обработки
-              console.log('Используем запасной метод стилизации...');
-              
-              try {
-                // Используем специальный Python скрипт как запасной вариант
-                const pythonProcess = spawn('python', [
-                  'server/stylization.py',
-                  contentPath,
-                  stylePath,
-                  outputPath
-                ]);
-                
-                let pythonOutput = '';
-                let pythonError = '';
-                
-                pythonProcess.stdout.on('data', (data) => {
-                  pythonOutput += data.toString();
-                  console.log(`Python output: ${data}`);
-                });
-                
-                pythonProcess.stderr.on('data', (data) => {
-                  pythonError += data.toString();
-                  console.error(`Python error: ${data}`);
-                });
-                
-                // Ждем завершения запасного скрипта
-                pythonProcess.on('close', (fallbackCode) => {
-                  if (fallbackCode !== 0) {
-                    console.error(`Python process exited with code ${fallbackCode}`);
-                    console.error(`Error: ${pythonError}`);
-                    fs.copyFileSync(contentPath, outputPath);
-                  }
-                  resolve();
-                });
-              } catch (fallbackError) {
-                console.error('Error executing fallback script:', fallbackError);
-                fs.copyFileSync(contentPath, outputPath);
-                resolve();
-              }
+              // Если Google Magenta не удалась, просто копируем оригинальное изображение
+              console.log('Google Magenta завершился с ошибкой. Копируем оригинальное изображение.');
+              fs.copyFileSync(contentPath, outputPath);
+              resolve();
             } else {
               console.log('Google Magenta успешно применил стиль!');
               resolve();

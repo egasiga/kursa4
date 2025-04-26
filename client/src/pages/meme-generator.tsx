@@ -183,38 +183,43 @@ export default function MemeGenerator() {
   const renderTextOnCanvas = () => {
     if (!canvasRef || !selectedTemplate || !selectedTemplate.textAreas) return;
     
-    const ctx = canvasRef.getContext("2d");
-    if (!ctx) return;
-    
-    textContent.forEach((item) => {
-      const textAreas = selectedTemplate.textAreas as any[] || [];
-      const textArea = textAreas[item.areaIndex];
-      if (!textArea) return;
+    // Используем отложенный вызов для обеспечения правильной отрисовки
+    // после обновления и полной загрузки изображения
+    setTimeout(() => {
+      const ctx = canvasRef.getContext("2d");
+      if (!ctx) return;
       
-      ctx.font = `${item.style.fontSize}px ${item.style.fontFamily}`;
-      ctx.textAlign = item.style.align as CanvasTextAlign;
-      
-      // Draw text stroke
-      ctx.lineWidth = item.style.strokeWidth;
-      ctx.strokeStyle = item.style.strokeColor;
-      // Вычисляем позицию текста с учетом смещения
-      const xPos = textArea.x + textArea.width / 2 + (item.style.offsetX || 0);
-      const yPos = textArea.y + textArea.height / 2 + (item.style.offsetY || 0);
-      
-      ctx.strokeText(
-        item.text,
-        xPos,
-        yPos
-      );
-      
-      // Draw text fill
-      ctx.fillStyle = item.style.color;
-      ctx.fillText(
-        item.text,
-        xPos,
-        yPos
-      );
-    });
+      textContent.forEach((item) => {
+        const textAreas = selectedTemplate.textAreas as any[] || [];
+        const textArea = textAreas[item.areaIndex];
+        if (!textArea) return;
+        
+        ctx.font = `${item.style.fontSize}px ${item.style.fontFamily}`;
+        ctx.textAlign = item.style.align as CanvasTextAlign;
+        
+        // Draw text stroke
+        ctx.lineWidth = item.style.strokeWidth;
+        ctx.strokeStyle = item.style.strokeColor;
+        // Вычисляем позицию текста с учетом смещения
+        const xPos = textArea.x + textArea.width / 2 + (item.style.offsetX || 0);
+        const yPos = textArea.y + textArea.height / 2 + (item.style.offsetY || 0);
+        
+        // Убедимся, что текст нарисован после обновления изображения
+        ctx.strokeText(
+          item.text,
+          xPos,
+          yPos
+        );
+        
+        // Draw text fill
+        ctx.fillStyle = item.style.color;
+        ctx.fillText(
+          item.text,
+          xPos,
+          yPos
+        );
+      });
+    }, 100);
   };
 
 
@@ -329,10 +334,44 @@ export default function MemeGenerator() {
         });
         setIsStyleApplied(true);
         
-        // Запускаем отрисовку текста сразу после обновления изображения
+        // Отрисовываем текст после обновления изображения с небольшой задержкой,
+        // чтобы изображение успело загрузиться и канвас обновиться
         setTimeout(() => {
-          renderTextOnCanvas();
-        }, 100);
+          if (canvasRef) {
+            const ctx = canvasRef.getContext("2d");
+            if (ctx) {
+              textContent.forEach((item) => {
+                const textAreas = selectedTemplate.textAreas as any[] || [];
+                const textArea = textAreas[item.areaIndex];
+                if (!textArea) return;
+                
+                ctx.font = `${item.style.fontSize}px ${item.style.fontFamily}`;
+                ctx.textAlign = item.style.align as CanvasTextAlign;
+                
+                // Draw text stroke
+                ctx.lineWidth = item.style.strokeWidth;
+                ctx.strokeStyle = item.style.strokeColor;
+                // Вычисляем позицию текста с учетом смещения
+                const xPos = textArea.x + textArea.width / 2 + (item.style.offsetX || 0);
+                const yPos = textArea.y + textArea.height / 2 + (item.style.offsetY || 0);
+                
+                ctx.strokeText(
+                  item.text,
+                  xPos,
+                  yPos
+                );
+                
+                // Draw text fill
+                ctx.fillStyle = item.style.color;
+                ctx.fillText(
+                  item.text,
+                  xPos,
+                  yPos
+                );
+              });
+            }
+          }
+        }, 250);
         
         toast({
           title: "Стиль применен",

@@ -74,7 +74,7 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     const styleImage = await loadAndProcessImage(styleImagePath);
     
     // Создаем объект стилизатора Magenta
-    const styleTransfer = new magenta.image.StyleTransfer();
+    const styleTransfer = new magentaImage.ArbitraryStyleTransfer();
     
     // Загружаем предобученную модель (это происходит автоматически)
     console.log('Загружаем модель стилизации Magenta...');
@@ -104,19 +104,31 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
   } catch (error) {
     console.error(`Ошибка при применении стиля Magenta: ${error.message}`);
     
-    // В случае ошибки, применяем запасной вариант с прямым вызовом API Magenta
+    // В случае ошибки, применяем запасной вариант с более простым подходом
     try {
       console.log('Пробуем альтернативный метод стилизации Magenta...');
       
-      // Используем прямой API-вызов Magenta через их официальный сервер
-      const stylizedBuffer = magenta.image.stylizeFromFiles(
-        contentImagePath,
-        styleImagePath,
+      // Создаем объект простого стилизатора Magenta
+      const simpleStyleTransfer = new magentaImage.ArbitraryStyleTransfer({
+        modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json',
+        backend: 'webgl'
+      });
+      
+      await simpleStyleTransfer.initialize();
+      
+      // Загружаем изображения напрямую
+      const contentBuffer = fs.readFileSync(contentImagePath);
+      const styleBuffer = fs.readFileSync(styleImagePath);
+      
+      // Применяем стилизацию с уменьшенными настройками качества
+      const result = await simpleStyleTransfer.stylize(
+        contentBuffer, 
+        styleBuffer,
         styleStrength
       );
       
       // Сохраняем полученное изображение
-      fs.writeFileSync(outputPath, stylizedBuffer);
+      fs.writeFileSync(outputPath, result);
       
       console.log('Альтернативная стилизация Magenta успешно применена');
       return true;
