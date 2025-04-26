@@ -306,24 +306,11 @@ export default function MemeGenerator() {
       
       console.log("Отправка запроса стилизации, styleId:", selectedStyle.id);
       
-      // Отправляем запрос на стилизацию с правильным форматированием
-      const response = await fetch("/api/stylize", {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image: imageData,
-          styleId: selectedStyle.id
-        })
+      // Используем apiRequest вместо прямого fetch для стилизации
+      const stylizationResult = await apiRequest("POST", "/api/stylize", {
+        image: imageData,
+        styleId: selectedStyle.id
       });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API запрос завершился с ошибкой: ${response.status} ${errorText}`);
-      }
-      
-      const stylizationResult = await response.json();
       
       if (stylizationResult && stylizationResult.styledImageUrl) {
         console.log("Стилизованное изображение успешно получено");
