@@ -9,7 +9,10 @@ const Jimp = require('jimp');
 
 // Загружаем Canvas для работы с изображениями в Node.js (требуется для TensorFlow.js)
 const canvas = require('canvas');
-const { createCanvas, loadImage } = canvas;
+const { createCanvas, loadImage, ImageData } = canvas;
+
+// Добавляем ImageData в глобальную область видимости для Magenta
+global.ImageData = ImageData;
 
 // Подключаем TensorFlow.js Node для ускорения работы модели
 try {
@@ -40,7 +43,8 @@ const magentaImage = require('@magenta/image');
 
 // Константы для настройки стилизации
 const STYLE_STRENGTH = 1.0; // От 0 до 1.0, где 1.0 - максимальная сила стиля
-const MAX_IMAGE_SIZE = 1024; // Ограничение по размеру изображения для эффективной обработки
+const MAX_IMAGE_SIZE = 256; // Ограничение по размеру изображения для эффективной обработки (уменьшено для скорости)
+const STYLIZATION_TIMEOUT = 20000; // Таймаут для операции стилизации (20 секунд)
 
 // Функция для загрузки изображения с помощью Canvas API (совместимо с TensorFlow.js)
 async function loadCanvasImage(imagePath) {
@@ -131,9 +135,18 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     console.log('Загружаем модель стилизации Magenta...');
     await styleTransfer.initialize();
     
-    // Применяем стилизацию с Canvas изображениями
+    // Применяем стилизацию с Canvas изображениями с таймаутом
     console.log('Применяем стилизацию...');
-    const stylizedImage = await styleTransfer.stylize(contentCanvasImage, styleCanvasImage, styleStrength);
+    
+    // Создаем Promise с таймаутом
+    const stylizePromise = Promise.race([
+      styleTransfer.stylize(contentCanvasImage, styleCanvasImage, styleStrength),
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Таймаут стилизации')), STYLIZATION_TIMEOUT);
+      })
+    ]);
+    
+    const stylizedImage = await stylizePromise;
 
     // Преобразуем результат обратно в изображение и сохраняем
     const resultImage = new Jimp({
@@ -168,8 +181,15 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
         const contentCanvas = await loadCanvasImage(contentImagePath);
         const styleCanvas = await loadCanvasImage(styleImagePath);
         
-        // Применяем стилизацию
-        const result = await simpleStyleTransfer.stylize(contentCanvas, styleCanvas, styleStrength);
+        // Применяем стилизацию с таймаутом
+        const stylizePromise = Promise.race([
+          simpleStyleTransfer.stylize(contentCanvas, styleCanvas, styleStrength),
+          new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Таймаут альтернативной стилизации')), STYLIZATION_TIMEOUT);
+          })
+        ]);
+        
+        const result = await stylizePromise;
         
         // Преобразуем результат в Jimp и сохраняем
         const resultImage = new Jimp({
