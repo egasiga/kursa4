@@ -1,4 +1,5 @@
-{pkgs}: {
+
+{ pkgs }: {
   deps = [
     pkgs.llvm
     pkgs.jq
@@ -16,5 +17,6 @@
     pkgs.libimagequant
     pkgs.lcms2
     pkgs.freetype
+    pkgs.libuuid
   ];
 }
