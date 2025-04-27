@@ -1,0 +1,49 @@
+Получен запрос на стилизацию изображения
+Изображение и стиль получены. ID стиля: style1
+Путь к файлу стиля: ./styles/1.jpg, styleId: style1, styleNumber: 1
+Исходное изображение сохранено в ./temp/content_1745758913702_wnc0yh.jpg
+Запускаем Google Magenta стилизацию на ./temp/content_1745758913702_wnc0yh.jpg
+Magenta error: file:///home/runner/workspace/server/cli-stylize.js:2
+#!/usr/bin/env node
+^
+
+SyntaxError: Invalid or unexpected token
+    at compileSourceTextModule (node:internal/modules/esm/utils:339:16)
+    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:168:18)
+    at callTranslator (node:internal/modules/esm/loader:428:14)
+    at ModuleLoader.moduleProvider (node:internal/modules/esm/loader:434:30)
+    at async link (node:internal/modules/esm/module_job:87:21)
+
+Node.js v20.18.1
+Процесс стилизации завершился с кодом 1
+Стилизация не удалась: file:///home/runner/workspace/server/cli-stylize.js:2
+#!/usr/bin/env node
+^
+
+SyntaxError: Invalid or unexpected token
+    at compileSourceTextModule (node:internal/modules/esm/utils:339:16)
+    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:168:18)
+    at callTranslator (node:internal/modules/esm/loader:428:14)
+    at ModuleLoader.moduleProvider (node:internal/modules/esm/loader:434:30)
+    at async link (node:internal/modules/esm/module_job:87:21)
+
+Node.js v20.18.1
+Ошибка при выполнении стилизации: Error: Стилизация завершилась с ошибкой: file:///home/runner/workspace/server/cli-stylize.js:2
+#!/usr/bin/env node
+^
+
+SyntaxError: Invalid or unexpected token
+    at compileSourceTextModule (node:internal/modules/esm/utils:339:16)
+    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:168:18)
+    at callTranslator (node:internal/modules/esm/loader:428:14)
+    at ModuleLoader.moduleProvider (node:internal/modules/esm/loader:434:30)
+    at async link (node:internal/modules/esm/module_job:87:21)
+
+Node.js v20.18.1
+    at ChildProcess.<anonymous> (/home/runner/workspace/server/routes.ts:413:24)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+Копирование исходного изображения из-за ошибки стилизации...
+Отправка стилизованного изображения размером: 69408 байт
+1:01:53 PM [express] POST /api/stylize 200 in 72ms :: {"originalImage":"data:image/jpeg;base64,/9j/4…

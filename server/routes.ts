@@ -375,7 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Используем spawn для запуска процесса стилизации
         const stylizationPromise = new Promise<void>((resolve, reject) => {
           const magentaProcess = spawn('node', [
-            'server/cli-stylize.js',
+            'server/cli-stylize.cjs',
             contentPath,
             stylePath,
             outputPath,
