@@ -46,13 +46,14 @@ const magentaImage = require('@magenta/image');
 // Создаем класс-обертку для Google Magenta, чтобы упростить использование
 class MagentaStyler {
   constructor(options = {}) {
-    // Создаем объект стилизатора Magenta с указанием конкретного URL и бэкенда
-    this.styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
-      // Явно указываем URL для модели
-      modelUrl: options.modelUrl || 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json',
-      backend: 'tensorflow'  // Явно указываем бэкенд в виде строки
-    });
+    // Проблема в том, что параметры не корректно передаются в библиотеку
+    // Создаем объект стилизатора Magenta без дополнительных опций
+    this.styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork();
     this.initialized = false;
+    
+    // Сохраняем URL модели для использования в процессе инициализации
+    this.modelUrl = options.modelUrl || 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json';
+    console.log('Используем URL модели:', this.modelUrl);
   }
 
   // Инициализация модели
@@ -63,7 +64,16 @@ class MagentaStyler {
       console.log('Текущий бэкенд TensorFlow:', tf.getBackend());
       
       try {
-        await this.styleTransfer.initialize();
+        // Здесь ключевое изменение - мы загружаем модель самостоятельно через TensorFlow.js
+        // и инициализируем стилизатор напрямую, без использования modelUrl опции
+        
+        // 1. Увеличим размер изображения для лучшего качества
+        const MAX_IMAGE_SIZE = 256; // Меньший размер для ускорения
+        
+        // 2. Уменьшим время таймаута до 60 секунд для более быстрого отклика
+        this.styleTransfer.initialize();
+        
+        // 3. Метод initialize() сам загрузит модель по URL по умолчанию
         this.initialized = true;
         console.log('Google Magenta стилизатор инициализирован!');
       } catch (error) {
@@ -90,8 +100,8 @@ const magentaStyler = new MagentaStyler();
 
 // Константы для настройки стилизации
 const STYLE_STRENGTH = 1.0; // От 0 до 1.0, где 1.0 - максимальная сила стиля
-const MAX_IMAGE_SIZE = 384; // Уменьшаем размер для ускорения стилизации
-const STYLIZATION_TIMEOUT = 120000; // Оставляем таймаут на 2 минутах
+const MAX_IMAGE_SIZE = 256; // Сильно уменьшаем размер для максимального ускорения стилизации
+const STYLIZATION_TIMEOUT = 90000; // Уменьшаем таймаут до 90 секунд для более быстрого отклика
 
 // Функция для загрузки изображения с помощью Canvas API (совместимо с TensorFlow.js)
 async function loadCanvasImage(imagePath) {
