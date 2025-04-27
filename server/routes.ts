@@ -369,139 +369,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fs.writeFileSync(contentPath, Buffer.from(base64Data, 'base64'));
       console.log(`Исходное изображение сохранено в ${contentPath}`);
       
-      // Используем Python для стилизации изображений (более быстрый метод)
-      console.log(`Запускаем стилизацию Python на ${contentPath}`);
+      // Используем Google Magenta для стилизации изображений с оптимизированными настройками
+      console.log(`Запускаем стилизацию Google Magenta на ${contentPath}`);
       
       try {
         // Устанавливаем таймаут для процесса стилизации
-        const timeout = 15000; // 15 секунд (уменьшаем для Python процесса)
+        const timeout = 30000; // 30 секунд
         
         // Создаем обещание с таймаутом для предотвращения зависания процесса
         const stylizationPromise = new Promise<void>((resolve, reject) => {
-          // Запускаем Python-скрипт стилизации (быстрее и эффективнее)
-          const pythonProcess = spawn('python3', [
-            'server/stylization.py',
+          // Запускаем процесс стилизации с пониженным приоритетом
+          const magentaProcess = spawn('nice', [
+            '-n', '10', // Пониженный приоритет
+            'node', 
+            'server/magenta-stylize.cjs',
             contentPath,
             stylePath,
-            outputPath
+            outputPath,
+            '0.9' // Немного уменьшаем силу стиля для повышения производительности
           ]);
           
-          let pythonOutput = '';
-          let pythonError = '';
+          let magentaOutput = '';
+          let magentaError = '';
           
-          pythonProcess.stdout.on('data', (data) => {
-            pythonOutput += data.toString();
-            console.log(`Python: ${data.toString().trim()}`);
+          magentaProcess.stdout.on('data', (data) => {
+            magentaOutput += data.toString();
+            console.log(`Magenta: ${data.toString().trim()}`);
           });
           
-          pythonProcess.stderr.on('data', (data) => {
-            pythonError += data.toString();
-            console.error(`Python error: ${data.toString().trim()}`);
+          magentaProcess.stderr.on('data', (data) => {
+            magentaError += data.toString();
+            console.error(`Magenta error: ${data.toString().trim()}`);
           });
           
           // Таймер для отмены процесса при превышении таймаута
           const timeoutId = setTimeout(() => {
             console.error(`Стилизация превысила таймаут ${timeout}ms, завершаем процесс`);
-            pythonProcess.kill('SIGTERM');
-            
-            // Вместо ошибки пытаемся использовать запасной метод
-            console.log('Используем запасной метод стилизации...');
-            
-            // Запускаем встроенную стилизацию с помощью более простого метода
-            const simpleProcess = spawn('python3', [
-              '-c',
-              `
-import sys
-from PIL import Image, ImageFilter, ImageEnhance
-
-# Загружаем изображения
-content_img = Image.open('${contentPath}')
-style_id = '${styleNumber}'
-
-# Применяем быстрые фильтры
-enhanced = content_img.copy()
-enhanced = ImageEnhance.Contrast(enhanced).enhance(1.5)
-enhanced = ImageEnhance.Color(enhanced).enhance(1.3)
-enhanced = enhanced.filter(ImageFilter.EDGE_ENHANCE)
-
-# Сохраняем результат
-enhanced.save('${outputPath}', quality=95)
-print("Быстрая стилизация успешно применена!")
-              `
-            ]);
-            
-            simpleProcess.on('close', (code) => {
-              if (code !== 0) {
-                console.error('Ошибка запасного метода, копируем оригинал');
-                fs.copyFileSync(contentPath, outputPath);
-              }
-              resolve();
-            });
-            
-            simpleProcess.on('error', (err) => {
-              console.error('Ошибка запасного метода:', err);
-              fs.copyFileSync(contentPath, outputPath);
-              resolve();
-            });
+            magentaProcess.kill('SIGTERM');
+            reject(new Error('Стилизация заняла слишком много времени'));
           }, timeout);
           
-          pythonProcess.on('close', (code) => {
+          magentaProcess.on('close', (code) => {
             clearTimeout(timeoutId); // Очищаем таймер
             
             if (code !== 0) {
-              console.error(`Python стилизация завершилась с кодом ${code}`);
-              console.error(`Ошибка: ${pythonError}`);
+              console.error(`Google Magenta завершился с кодом ${code}`);
+              console.error(`Ошибка: ${magentaError}`);
               
-              // Если Python стилизация не удалась, используем запасной подход
-              console.log('Используем запасной фильтр для стилизации...');
-              
-              const simpleProcess = spawn('python3', [
-                '-c',
-                `
-import sys
-from PIL import Image, ImageFilter, ImageEnhance
-
-# Загружаем изображения
-content_img = Image.open('${contentPath}')
-style_id = '${styleNumber}'
-
-# Применяем быстрые фильтры
-enhanced = content_img.copy()
-enhanced = ImageEnhance.Contrast(enhanced).enhance(1.5)
-enhanced = ImageEnhance.Color(enhanced).enhance(1.3)
-enhanced = enhanced.filter(ImageFilter.EDGE_ENHANCE)
-
-# Сохраняем результат
-enhanced.save('${outputPath}', quality=95)
-print("Быстрая стилизация успешно применена!")
-                `
-              ]);
-              
-              simpleProcess.on('close', (backupCode) => {
-                if (backupCode !== 0) {
-                  console.error('Ошибка запасного метода, копируем оригинал');
-                  fs.copyFileSync(contentPath, outputPath);
-                }
-                resolve();
-              });
-              
-              simpleProcess.on('error', () => {
+              // Если Google Magenta не удалась, возвращаем оригинальное изображение
+              console.log('Копируем оригинальное изображение как запасной вариант.');
+              try {
                 fs.copyFileSync(contentPath, outputPath);
                 resolve();
-              });
+              } catch (e) {
+                reject(e);
+              }
             } else {
-              console.log('Python стилизация успешно применена!');
+              console.log('Google Magenta успешно применил стиль!');
               resolve();
             }
           });
           
-          pythonProcess.on('error', (err) => {
+          magentaProcess.on('error', (err) => {
             clearTimeout(timeoutId);
-            console.error('Ошибка запуска Python процесса:', err);
-            
-            // Если Python не запустился, копируем оригинал
-            fs.copyFileSync(contentPath, outputPath);
-            resolve();
+            console.error('Ошибка запуска процесса:', err);
+            reject(err);
           });
         });
         
@@ -509,7 +441,7 @@ print("Быстрая стилизация успешно применена!")
         await stylizationPromise;
         
       } catch (error) {
-        console.error('Ошибка при выполнении стилизации:', error);
+        console.error('Ошибка при выполнении Google Magenta:', error);
         // В случае ошибки копируем оригинальное изображение
         fs.copyFileSync(contentPath, outputPath);
       }
