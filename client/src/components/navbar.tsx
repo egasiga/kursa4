@@ -22,6 +22,11 @@ export default function Navbar() {
       icon: <PenTool className="w-5 h-5 mr-2" />,
     },
     {
+      title: "Простой Генератор",
+      href: "/simple-meme",
+      icon: <Image className="w-5 h-5 mr-2" />,
+    },
+    {
       title: "Создание Коллажей",
       href: "/collage-creator",
       icon: <Grid2X2 className="w-5 h-5 mr-2" />,
