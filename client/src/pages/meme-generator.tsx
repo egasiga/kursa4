@@ -178,31 +178,47 @@ export default function MemeGenerator() {
       ...prev,
       [filterType]: value,
     }));
+    
+    // После изменения фильтров также обновляем текст
+    setTimeout(() => {
+      if (canvasRef) {
+        console.log('Пытаемся обновить текст после изменения фильтров');
+        renderTextOnCanvas();
+      }
+    }, 300);
   };
 
   const renderTextOnCanvas = () => {
-    console.log('Вызвана функция renderTextOnCanvas');
-    if (!canvasRef || !selectedTemplate || !selectedTemplate.textAreas) {
-      console.error('Один из необходимых объектов не определен:', 
-        { hasCanvasRef: !!canvasRef, hasTemplate: !!selectedTemplate, 
-          hasTextAreas: !!(selectedTemplate && selectedTemplate.textAreas) });
+    console.log('Вызвана функция renderTextOnCanvas, canvasRef:', canvasRef);
+    
+    // Проверяем все необходимые условия
+    if (!canvasRef) {
+      console.error('Canvas не определен');
       return;
     }
     
-    // Убедимся, что canvasRef не null и имеет метод getContext
-    if (!canvasRef.getContext) {
-      console.error('canvasRef не имеет метода getContext');
+    if (!selectedTemplate || !selectedTemplate.textAreas) {
+      console.error('Шаблон или текстовые области не определены');
       return;
     }
+    
+    if (!textContent || textContent.length === 0) {
+      console.error('Текстовый контент пуст');
+      return;
+    }
+    
+    // Получаем 2D контекст
+    const ctx = canvasRef.getContext("2d");
+    if (!ctx) {
+      console.error('Не удалось получить 2D контекст из canvas');
+      return;
+    }
+    
+    console.log('Canvas размеры:', canvasRef.width, 'x', canvasRef.height);
     
     // Используем отложенный вызов для обеспечения правильной отрисовки
     // после обновления и полной загрузки изображения
     setTimeout(() => {
-      const ctx = canvasRef.getContext("2d");
-      if (!ctx) {
-        console.error('Не удалось получить 2d context из canvas');
-        return;
-      }
       
       // Получаем масштаб канваса относительно оригинального изображения
       // Это значение может быть < 1 для уменьшения или > 1 для увеличения
@@ -356,10 +372,10 @@ export default function MemeGenerator() {
         text: area.defaultText || "",
         style: {
           fontFamily: "Arial",
-          fontSize: 36,
+          fontSize: 48,
           color: "#FFFFFF",
           strokeColor: "#000000",
-          strokeWidth: 3,
+          strokeWidth: 5,
           align: "center",
           offsetX: 0,
           offsetY: 0,
