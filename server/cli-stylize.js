@@ -1,11 +1,12 @@
+
 #!/usr/bin/env node
 
 /**
  * Командная строка для стилизации изображений с Google Magenta
  */
 
-const styler = require('./magenta-core');
-const fs = require('fs');
+import styler from './magenta-core.js';
+import fs from 'fs';
 
 // Функция с таймаутом для предотвращения зависания
 async function stylizeWithTimeout(contentPath, stylePath, outputPath, strength, timeout) {
