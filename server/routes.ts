@@ -274,39 +274,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     fs.mkdirSync('./temp', { recursive: true });
   }
 
+  // Маршрут для получения изображения стиля
+  app.get("/api/style-preview/:id", (req: Request, res: Response) => {
+    try {
+      const styleId = req.params.id;
+      const styleImagePath = `./styles/${styleId}.jpg`;
+
+      // Проверяем, существует ли файл стиля
+      if (!fs.existsSync(styleImagePath)) {
+        return res.status(404).json({ message: "Style image not found" });
+      }
+
+      // Отправляем файл изображения
+      res.sendFile(path.resolve(styleImagePath));
+    } catch (error) {
+      console.error("Error fetching style image:", error);
+      res.status(500).json({ message: "Failed to fetch style image", error: String(error) });
+    }
+  });
+
   // Маршрут для получения доступных стилей
   app.get("/api/styles", (req: Request, res: Response) => {
     try {
-      // Возвращаем список предопределенных стилей
-      // Клиент будет использовать placeholder-styles.ts для отображения
+      // Возвращаем список предопределенных стилей с конкретными известными картинами
       const styles = [
         {
           id: 'style1',
-          name: 'Звёздная ночь (Ван Гог)',
-          imageUrl: ''
+          name: 'Звездная ночь',
+          description: 'Картина Винсента Ван Гога "Звездная ночь" (1889)',
+          imageUrl: '/api/style-preview/1'
         },
         {
           id: 'style2',
-          name: 'Крик (Мунк)',
-          imageUrl: ''
+          name: 'Крик',
+          description: 'Картина Эдварда Мунка "Крик" (1893)',
+          imageUrl: '/api/style-preview/2'
         },
         {
           id: 'style3',
-          name: 'Композиция (Кандинский)',
-          imageUrl: ''
+          name: 'Композиция',
+          description: 'Картина Василия Кандинского "Композиция" (1913)',
+          imageUrl: '/api/style-preview/3'
         },
         {
           id: 'style4',
-          name: 'Кубизм (Пикассо)',
-          imageUrl: ''
+          name: 'Кубизм',
+          description: 'Картина Пабло Пикассо в стиле кубизма',
+          imageUrl: '/api/style-preview/4'
         },
         {
           id: 'style5',
-          name: 'Водяные лилии (Моне)',
-          imageUrl: ''
+          name: 'Водяные лилии',
+          description: 'Картина Клода Моне "Водяные лилии" (1916)',
+          imageUrl: '/api/style-preview/5'
         }
       ];
-      res.json(styles);
+      res.json({ styles });
     } catch (error) {
       console.error("Error fetching styles:", error);
       res.status(500).json({ message: "Failed to fetch styles", error: String(error) });
