@@ -153,14 +153,82 @@ export default function MemeImageEditor({
     loadTemplateImage();
   }, [template, template.imageUrl]);
 
-  // Функциональность перетаскивания текста отключена
-  const handleMouseDown = () => {};
-  const handleMouseMove = () => {};
-  const handleMouseUp = () => {};
+  // Обработчики для перетаскивания текста
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current || !onUpdateTextPosition || !textContent.length) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Проходим по всем текстовым элементам и проверяем, попал ли клик в их область
+    let clickedTextId: string | null = null;
+    
+    textContent.forEach(item => {
+      const position = item.position || { x: canvasRef.current!.width / 2, y: canvasRef.current!.height / 2 };
+      
+      // Размер области нажатия (зависит от размера шрифта)
+      const hitSize = Math.max(100, item.style.fontSize * 2); 
+      
+      if (
+        Math.abs(x - position.x) < hitSize / 2 &&
+        Math.abs(y - position.y) < hitSize / 2
+      ) {
+        clickedTextId = item.id;
+      }
+    });
+    
+    if (clickedTextId) {
+      setDraggingText({
+        index: 0, // индекс больше не используется, но оставим структуру для совместимости
+        startX: x,
+        startY: y,
+      });
+      
+      // Сохраняем ID активного текста как атрибут данных для компонента
+      canvasRef.current.dataset.activeTextId = clickedTextId;
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!draggingText || !canvasRef.current || !onUpdateTextPosition) return;
+    
+    // Получаем ID активного текста из атрибута данных
+    const activeTextId = canvasRef.current.dataset.activeTextId;
+    if (!activeTextId) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Вычисляем смещение относительно начальной позиции
+    const deltaX = x - draggingText.startX;
+    const deltaY = y - draggingText.startY;
+    
+    // Получаем текущее положение для активного текста
+    const textItem = textContent.find(t => t.id === activeTextId);
+    if (!textItem) return;
+    
+    const position = textItem.position || { x: canvasRef.current.width / 2, y: canvasRef.current.height / 2 };
+    
+    // Обновляем позицию текста с новыми координатами
+    onUpdateTextPosition(activeTextId, position.x + deltaX, position.y + deltaY);
+    
+    // Обновляем начальную позицию для следующего движения
+    setDraggingText({
+      ...draggingText,
+      startX: x,
+      startY: y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setDraggingText(null);
+  };
 
   // Стили для canvas
   const canvasStyle = {
-    cursor: 'default',
+    cursor: draggingText ? 'grabbing' : 'default',
     border: '1px solid #e5e7eb',
     borderRadius: '0.375rem',
     maxWidth: '100%'

@@ -25,9 +25,24 @@ export default function MemeGenerator() {
   
   const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(null);
 
-  // Временно отключаем функциональность текста
-  const [textContent, setTextContent] = useState<Array<any>>([]);
-  const [showTextEditor, setShowTextEditor] = useState(false);
+  // Состояние для текстовых элементов с согласованной структурой
+  const [textContent, setTextContent] = useState<Array<{
+    id: string;
+    text: string;
+    style: {
+      fontFamily: string;
+      fontSize: number;
+      color: string;
+      strokeColor: string;
+      strokeWidth: number;
+      align: string;
+    };
+    position: {
+      x: number;
+      y: number;
+    };
+  }>>([]);
+  const [showTextEditor, setShowTextEditor] = useState(true);
   
   const [filters, setFilters] = useState({
     brightness: 100,
@@ -93,12 +108,101 @@ export default function MemeGenerator() {
     }
   }, [templateData]);
 
-  // Заглушки для функций обработки текста (будут полностью переписаны)
-  const handleAddText = () => {};
-  const handleTextChange = (id: string, text: string) => {};
-  const handleTextStyleChange = (id: string, styleKey: string, value: any) => {};
-  const handleTextPositionChange = (id: string, newX: number, newY: number) => {};
-  const renderTextOnCanvas = () => {};
+  // Функция для добавления нового текста
+  const handleAddText = () => {
+    const newId = `text-${Date.now()}`;
+    setTextContent((prev) => [
+      ...prev,
+      {
+        id: newId,
+        text: "Добавьте текст",
+        style: {
+          fontFamily: "Impact",
+          fontSize: 48,
+          color: "#FFFFFF",
+          strokeColor: "#000000",
+          strokeWidth: 5,
+          align: "center",
+        },
+        position: { 
+          x: canvasRef ? canvasRef.width / 2 : 400, 
+          y: canvasRef ? canvasRef.height / 2 : 400 
+        },
+      },
+    ]);
+    setShowTextEditor(true);
+  };
+
+  // Обновление текста по id
+  const handleTextChange = (id: string, text: string) => {
+    setTextContent((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, text } : item))
+    );
+  };
+
+  // Обновление стиля текста по id
+  const handleTextStyleChange = (id: string, styleKey: string, value: any) => {
+    setTextContent((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              style: {
+                ...item.style,
+                [styleKey]: value,
+              },
+            }
+          : item
+      )
+    );
+  };
+  
+  // Обновление позиции текста
+  const handleTextPositionChange = (id: string, newX: number, newY: number) => {
+    setTextContent((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              position: {
+                x: newX,
+                y: newY,
+              },
+            }
+          : item
+      )
+    );
+  };
+
+  // Отрисовка текста на canvas
+  const renderTextOnCanvas = () => {
+    if (!canvasRef) return;
+    
+    const ctx = canvasRef.getContext("2d");
+    if (!ctx) return;
+    
+    textContent.forEach((item) => {
+      ctx.font = `${item.style.fontSize}px ${item.style.fontFamily}`;
+      ctx.textAlign = item.style.align as CanvasTextAlign;
+      
+      // Draw text stroke
+      ctx.lineWidth = item.style.strokeWidth;
+      ctx.strokeStyle = item.style.strokeColor;
+      ctx.strokeText(
+        item.text,
+        item.position.x,
+        item.position.y
+      );
+      
+      // Draw text fill
+      ctx.fillStyle = item.style.color;
+      ctx.fillText(
+        item.text,
+        item.position.x,
+        item.position.y
+      );
+    });
+  };
 
   const handleFilterChange = (filterType: keyof typeof filters, value: number) => {
     setFilters((prev) => ({
@@ -191,10 +295,10 @@ export default function MemeGenerator() {
         });
         setIsStyleApplied(true);
         
-        // Текстовая функциональность отключена
-        // setTimeout(() => {
-        //   renderTextOnCanvas();
-        // }, 250);
+        // Вызываем нашу функцию рендеринга текста
+        setTimeout(() => {
+          renderTextOnCanvas();
+        }, 250);
         
         toast({
           title: "Стиль применен",
