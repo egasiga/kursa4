@@ -36,8 +36,10 @@ export default function MemeGenerator() {
       strokeColor: string;
       strokeWidth: number;
       align: string;
-      offsetX?: number;
-      offsetY?: number;
+    };
+    position: {
+      x: number;
+      y: number;
     };
   }>>([]);
   
