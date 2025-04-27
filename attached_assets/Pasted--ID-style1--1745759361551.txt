@@ -1,0 +1,130 @@
+Получен запрос на стилизацию изображения
+Изображение и стиль получены. ID стиля: style1
+Путь к файлу стиля: ./styles/1.jpg, styleId: style1, styleNumber: 1
+Исходное изображение сохранено в ./temp/content_1745759343458_kus8ee.jpg
+Запускаем Google Magenta стилизацию на ./temp/content_1745759343458_kus8ee.jpg
+Magenta error: 2025-04-27 13:09:04.293638: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Magenta: Запуск Google Magenta стилизации...
+Magenta: Инициализация модели Google Magenta...
+Magenta error: Ошибка инициализации модели Google Magenta: TypeError: Failed to parse URL from [object Object]/weights_manifest.json
+    at node:internal/deps/undici/undici:13392:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  [cause]: TypeError: Invalid URL
+      at new URL (node:internal/url:806:29)
+      at new Request (node:internal/deps/undici/undici:9474:25)
+      at fetch (node:internal/deps/undici/undici:10203:25)
+      at fetch (node:internal/deps/undici/undici:13390:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:72:12)
+      at BrowserHTTPRequest.<anonymous> (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:152:55)
+      at step (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:32:23)
+      at Object.next (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:13:53)
+      at /home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:7:71
+      at new Promise (<anonymous>) {
+    code: 'ERR_INVALID_URL',
+    input: '[object Object]/weights_manifest.json'
+  }
+}
+Ошибка при выполнении стилизации: TypeError: Failed to parse URL from [object Object]/weights_manifest.json
+    at node:internal/deps/undici/undici:13392:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  [cause]: TypeError: Invalid URL
+      at new URL (node:internal/url:806:29)
+      at new Request (node:internal/deps/undici/undici:9474:25)
+      at fetch (node:internal/deps/undici/undici:10203:25)
+      at fetch (node:internal/deps/undici/undici:13390:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:72:12)
+      at BrowserHTTPRequest.<anonymous> (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:152:55)
+      at step (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:32:23)
+      at Object.next (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:13:53)
+      at /home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:7:71
+      at new Promise (<anonymous>) {
+    code: 'ERR_INVALID_URL',
+    input: '[object Object]/weights_manifest.json'
+  }
+}
+Ошибка выполнения стилизации: Failed to parse URL from [object Object]/weights_manifest.json
+Процесс стилизации завершился с кодом 1
+Стилизация не удалась: 2025-04-27 13:09:04.293638: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.Ошибка инициализации модели Google Magenta: TypeError: Failed to parse URL from [object Object]/weights_manifest.json
+    at node:internal/deps/undici/undici:13392:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  [cause]: TypeError: Invalid URL
+      at new URL (node:internal/url:806:29)
+      at new Request (node:internal/deps/undici/undici:9474:25)
+      at fetch (node:internal/deps/undici/undici:10203:25)
+      at fetch (node:internal/deps/undici/undici:13390:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:72:12)
+      at BrowserHTTPRequest.<anonymous> (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:152:55)
+      at step (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:32:23)
+      at Object.next (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:13:53)
+      at /home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:7:71
+      at new Promise (<anonymous>) {
+    code: 'ERR_INVALID_URL',
+    input: '[object Object]/weights_manifest.json'
+  }
+}
+Ошибка при выполнении стилизации: TypeError: Failed to parse URL from [object Object]/weights_manifest.json
+    at node:internal/deps/undici/undici:13392:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  [cause]: TypeError: Invalid URL
+      at new URL (node:internal/url:806:29)
+      at new Request (node:internal/deps/undici/undici:9474:25)
+      at fetch (node:internal/deps/undici/undici:10203:25)
+      at fetch (node:internal/deps/undici/undici:13390:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:72:12)
+      at BrowserHTTPRequest.<anonymous> (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:152:55)
+      at step (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:32:23)
+      at Object.next (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:13:53)
+      at /home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:7:71
+      at new Promise (<anonymous>) {
+    code: 'ERR_INVALID_URL',
+    input: '[object Object]/weights_manifest.json'
+  }
+}
+Ошибка выполнения стилизации: Failed to parse URL from [object Object]/weights_manifest.json
+Ошибка при выполнении стилизации: Error: Стилизация завершилась с ошибкой: 2025-04-27 13:09:04.293638: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.Ошибка инициализации модели Google Magenta: TypeError: Failed to parse URL from [object Object]/weights_manifest.json
+    at node:internal/deps/undici/undici:13392:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  [cause]: TypeError: Invalid URL
+      at new URL (node:internal/url:806:29)
+      at new Request (node:internal/deps/undici/undici:9474:25)
+      at fetch (node:internal/deps/undici/undici:10203:25)
+      at fetch (node:internal/deps/undici/undici:13390:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:72:12)
+      at BrowserHTTPRequest.<anonymous> (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:152:55)
+      at step (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:32:23)
+      at Object.next (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:13:53)
+      at /home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:7:71
+      at new Promise (<anonymous>) {
+    code: 'ERR_INVALID_URL',
+    input: '[object Object]/weights_manifest.json'
+  }
+}
+Ошибка при выполнении стилизации: TypeError: Failed to parse URL from [object Object]/weights_manifest.json
+    at node:internal/deps/undici/undici:13392:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  [cause]: TypeError: Invalid URL
+      at new URL (node:internal/url:806:29)
+      at new Request (node:internal/deps/undici/undici:9474:25)
+      at fetch (node:internal/deps/undici/undici:10203:25)
+      at fetch (node:internal/deps/undici/undici:13390:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:72:12)
+      at BrowserHTTPRequest.<anonymous> (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:152:55)
+      at step (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:32:23)
+      at Object.next (/home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:13:53)
+      at /home/runner/workspace/node_modules/@magenta/image/node_modules/@tensorflow/tfjs-core/dist/io/browser_http.js:7:71
+      at new Promise (<anonymous>) {
+    code: 'ERR_INVALID_URL',
+    input: '[object Object]/weights_manifest.json'
+  }
+}
+Ошибка выполнения стилизации: Failed to parse URL from [object Object]/weights_manifest.json
+    at ChildProcess.<anonymous> (/home/runner/workspace/server/routes.ts:413:24)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+Копирование исходного изображения из-за ошибки стилизации...
+Отправка стилизованного изображения размером: 69408 байт
+1:09:05 PM [express] POST /api/stylize 200 in 1829ms :: {"originalImage":"data:image/jpeg;base64,/9j…

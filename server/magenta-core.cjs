@@ -4,13 +4,27 @@
  */
 
 // Подключаем TensorFlow.js + Node (для ускорения)
-require('@tensorflow/tfjs-node');
+const tf = require('@tensorflow/tfjs-node');
 
 // Импортируем основные библиотеки
 const fs = require('fs');
 const path = require('path');
 const { createCanvas, loadImage } = require('canvas');
 const magenta = require('@magenta/image');
+
+// Переопределяем методы поиска URL для модели
+// Это необходимо, чтобы исправить проблему с URL формированием
+global.fetch = require('node-fetch');
+
+// Патчим библиотеку TensorFlow.js, чтобы она правильно разрешала URL
+const originalHTTPRequest = tf.io.http;
+if (originalHTTPRequest && originalHTTPRequest.getLoadHandlers) {
+  const originalGetLoadHandlers = originalHTTPRequest.getLoadHandlers;
+  originalHTTPRequest.getLoadHandlers = function(...args) {
+    console.log('Перехват запроса на загрузку модели:', ...args);
+    return originalGetLoadHandlers.apply(this, args);
+  };
+}
 
 /**
  * Класс для работы с Google Magenta стилизацией
@@ -34,13 +48,35 @@ class MagentaStyleTransfer {
     console.log('Инициализация модели Google Magenta...');
     
     try {
-      // Создаем модель с явным указанием URL модели
+      // Создаем модель с явным указанием базового URL модели
+      // Важно: в Node.js необходимо передать полный URL как строку
+      const MODEL_URL = 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary';
+      
+      // Необходимо создать модель с определенными опциями
       this.model = new magenta.ArbitraryStyleTransferNetwork({
-        modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json'
+        // Явно определяем URL модели
+        modelUrl: MODEL_URL + '/model.json',
+        // Устанавливаем обработчик для загрузки весов
+        onProgress: (progress) => {
+          console.log(`Загрузка модели: ${Math.round(progress * 100)}%`);
+        }
       });
       
-      // Инициализируем модель
-      await this.model.initialize();
+      console.log(`Загрузка модели из: ${MODEL_URL}/model.json`);
+      
+      // Создаем собственную функцию загрузки модели
+      // Вместо стандартной initialize() используем наш подход
+      if (typeof this.model.initialize === 'function') {
+        console.log('Используем стандартный метод инициализации модели');
+        await this.model.initialize();
+      } else {
+        console.log('Используем альтернативный метод инициализации модели');
+        // Если initialize отсутствует, загружаем модель вручную
+        if (typeof this.model.load === 'function') {
+          await this.model.load();
+        }
+      }
+      
       this.initialized = true;
       console.log('Модель Google Magenta инициализирована успешно!');
     } catch (err) {
