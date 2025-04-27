@@ -181,13 +181,28 @@ export default function MemeGenerator() {
   };
 
   const renderTextOnCanvas = () => {
-    if (!canvasRef || !selectedTemplate || !selectedTemplate.textAreas) return;
+    console.log('Вызвана функция renderTextOnCanvas');
+    if (!canvasRef || !selectedTemplate || !selectedTemplate.textAreas) {
+      console.error('Один из необходимых объектов не определен:', 
+        { hasCanvasRef: !!canvasRef, hasTemplate: !!selectedTemplate, 
+          hasTextAreas: !!(selectedTemplate && selectedTemplate.textAreas) });
+      return;
+    }
+    
+    // Убедимся, что canvasRef не null и имеет метод getContext
+    if (!canvasRef.getContext) {
+      console.error('canvasRef не имеет метода getContext');
+      return;
+    }
     
     // Используем отложенный вызов для обеспечения правильной отрисовки
     // после обновления и полной загрузки изображения
     setTimeout(() => {
       const ctx = canvasRef.getContext("2d");
-      if (!ctx) return;
+      if (!ctx) {
+        console.error('Не удалось получить 2d context из canvas');
+        return;
+      }
       
       // Получаем масштаб канваса относительно оригинального изображения
       // Это значение может быть < 1 для уменьшения или > 1 для увеличения
@@ -199,10 +214,18 @@ export default function MemeGenerator() {
       
       console.log('Масштаб канваса:', canvasScale, 'Ширина:', canvasWidth);
       
+      console.log("Начинаем отрисовку текста на канвасе. textContent:", textContent);
+      console.log("Текстовые области в шаблоне:", selectedTemplate.textAreas);
+
       textContent.forEach((item) => {
         const textAreas = selectedTemplate.textAreas as any[] || [];
+        console.log(`Обработка текстовой области для индекса ${item.areaIndex}, текст: "${item.text}"`);
         const textArea = textAreas[item.areaIndex];
-        if (!textArea) return;
+        if (!textArea) {
+          console.error(`Текстовая область не найдена для индекса ${item.areaIndex}`);
+          return;
+        }
+        console.log(`Найдена текстовая область:`, textArea);
         
         // Настраиваем размер шрифта с учетом масштаба
         const scaledFontSize = Math.max(14, item.style.fontSize * canvasScale);
