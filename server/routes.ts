@@ -317,9 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/stylize", async (req: Request, res: Response) => {
     try {
       console.log("Получен запрос на стилизацию изображения");
-      console.log("Тип Content-Type:", req.headers['content-type']);
-      console.log("Тело запроса получено:", req.body ? "да" : "нет");
-
+      
       const { image, styleId } = req.body;
       
       if (!image) {
@@ -334,82 +332,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Изображение и стиль получены. ID стиля:", styleId);
 
-      // Генерируем временные имена файлов
+      // Генерируем временные имена файлов с уникальным префиксом для предотвращения коллизий
       const timestamp = Date.now();
-      const contentPath = `./temp/content_${timestamp}.jpg`;
+      const randomString = Math.random().toString(36).substring(2, 8);
+      const contentPath = `./temp/content_${timestamp}_${randomString}.jpg`;
       const styleNumber = styleId.replace('style', '');
       const stylePath = `./styles/${styleNumber}.jpg`;
-      const outputPath = `./temp/stylized_${timestamp}.jpg`;
+      const outputPath = `./temp/stylized_${timestamp}_${randomString}.jpg`;
+      
+      // Проверяем существование директорий, создаем при необходимости
+      if (!fs.existsSync('./temp')) {
+        fs.mkdirSync('./temp', { recursive: true });
+      }
+      
+      if (!fs.existsSync('./styles')) {
+        fs.mkdirSync('./styles', { recursive: true });
+      }
+      
+      // Проверяем существование файла стиля
+      if (!fs.existsSync(stylePath)) {
+        // Если файла стиля нет, создаем пустой стиль (белый квадрат)
+        console.log(`Файл стиля не существует: ${stylePath}, создаем пустой стиль.`);
+        const canvas = require('canvas');
+        const { createCanvas } = canvas;
+        const c = createCanvas(512, 512);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 512, 512);
+        fs.writeFileSync(stylePath, c.toBuffer('image/jpeg', { quality: 0.95 }));
+      }
       
       console.log(`Путь к файлу стиля: ${stylePath}, styleId: ${styleId}, styleNumber: ${styleNumber}`);
-      console.log(`Файл стиля существует: ${fs.existsSync(stylePath)}`);
       
-      // Сохраняем исходное изображение с высоким качеством
+      // Сохраняем исходное изображение с высоким качеством, но сначала очищаем от лишних данных
       const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
       fs.writeFileSync(contentPath, Buffer.from(base64Data, 'base64'));
-      console.log(`Original image saved to ${contentPath}`);
+      console.log(`Исходное изображение сохранено в ${contentPath}`);
       
-      // Используем ТОЛЬКО Google Magenta для стилизации изображений
-      console.log(`Запускаем стилизацию Google Magenta:`);
-      console.log(`1. Входное изображение: ${contentPath}`);
-      console.log(`2. Файл стиля: ${stylePath} (существует: ${fs.existsSync(stylePath)})`);
-      console.log(`3. Выходное изображение: ${outputPath}`);
+      // Используем Google Magenta для стилизации изображений с оптимизированными настройками
+      console.log(`Запускаем стилизацию Google Magenta на ${contentPath}`);
       
       try {
-        // Запускаем процесс стилизации Google Magenta
-        const magentaProcess = spawn('node', [
-          'server/magenta-stylize.cjs',
-          contentPath,
-          stylePath,
-          outputPath,
-          '1.0' // Максимальная сила стиля
-        ]);
+        // Устанавливаем таймаут для процесса стилизации
+        const timeout = 30000; // 30 секунд
         
-        let magentaOutput = '';
-        let magentaError = '';
-        
-        magentaProcess.stdout.on('data', (data) => {
-          magentaOutput += data.toString();
-          console.log(`Magenta output: ${data}`);
-        });
-        
-        magentaProcess.stderr.on('data', (data) => {
-          magentaError += data.toString();
-          console.error(`Magenta error: ${data}`);
-        });
-        
-        // Ждем завершения выполнения Google Magenta
-        await new Promise<void>((resolve, reject) => {
+        // Создаем обещание с таймаутом для предотвращения зависания процесса
+        const stylizationPromise = new Promise<void>((resolve, reject) => {
+          // Запускаем процесс стилизации с пониженным приоритетом
+          const magentaProcess = spawn('nice', [
+            '-n', '10', // Пониженный приоритет
+            'node', 
+            'server/magenta-stylize.cjs',
+            contentPath,
+            stylePath,
+            outputPath,
+            '0.9' // Немного уменьшаем силу стиля для повышения производительности
+          ]);
+          
+          let magentaOutput = '';
+          let magentaError = '';
+          
+          magentaProcess.stdout.on('data', (data) => {
+            magentaOutput += data.toString();
+            console.log(`Magenta: ${data.toString().trim()}`);
+          });
+          
+          magentaProcess.stderr.on('data', (data) => {
+            magentaError += data.toString();
+            console.error(`Magenta error: ${data.toString().trim()}`);
+          });
+          
+          // Таймер для отмены процесса при превышении таймаута
+          const timeoutId = setTimeout(() => {
+            console.error(`Стилизация превысила таймаут ${timeout}ms, завершаем процесс`);
+            magentaProcess.kill('SIGTERM');
+            reject(new Error('Стилизация заняла слишком много времени'));
+          }, timeout);
+          
           magentaProcess.on('close', (code) => {
+            clearTimeout(timeoutId); // Очищаем таймер
+            
             if (code !== 0) {
-              console.error(`Google Magenta process exited with code ${code}`);
-              console.error(`Error: ${magentaError}`);
+              console.error(`Google Magenta завершился с кодом ${code}`);
+              console.error(`Ошибка: ${magentaError}`);
               
-              // Если Google Magenta не удалась, просто копируем оригинальное изображение
-              console.log('Google Magenta завершился с ошибкой. Копируем оригинальное изображение.');
-              fs.copyFileSync(contentPath, outputPath);
-              resolve();
+              // Если Google Magenta не удалась, возвращаем оригинальное изображение
+              console.log('Копируем оригинальное изображение как запасной вариант.');
+              try {
+                fs.copyFileSync(contentPath, outputPath);
+                resolve();
+              } catch (e) {
+                reject(e);
+              }
             } else {
               console.log('Google Magenta успешно применил стиль!');
               resolve();
             }
           });
+          
+          magentaProcess.on('error', (err) => {
+            clearTimeout(timeoutId);
+            console.error('Ошибка запуска процесса:', err);
+            reject(err);
+          });
         });
+        
+        // Запускаем обещание стилизации с таймаутом
+        await stylizationPromise;
+        
       } catch (error) {
-        console.error('Error executing Google Magenta:', error);
+        console.error('Ошибка при выполнении Google Magenta:', error);
+        // В случае ошибки копируем оригинальное изображение
         fs.copyFileSync(contentPath, outputPath);
       }
       
       // Чтение стилизованного изображения и отправка в ответе
       if (!fs.existsSync(outputPath)) {
-        return res.status(500).json({ message: "Failed to create stylized image" });
+        return res.status(500).json({ message: "Не удалось создать стилизованное изображение" });
       }
       
-      // Чтение стилизованного изображения высокого качества
+      // Чтение стилизованного изображения 
       const stylizedImage = fs.readFileSync(outputPath);
       const stylizedBase64 = `data:image/jpeg;base64,${stylizedImage.toString('base64')}`;
       
-      console.log(`Sending stylized image, size: ${stylizedImage.length} bytes`);
+      console.log(`Отправка стилизованного изображения размером: ${stylizedImage.length} байт`);
       
       res.json({
         originalImage: image,
@@ -426,22 +472,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/stylize/:timestamp", (req: Request, res: Response) => {
     try {
       const timestamp = req.params.timestamp;
-      const contentPath = `./temp/content_${timestamp}.jpg`;
-      const stylizedPath = `./temp/stylized_${timestamp}.jpg`;
       
-      // Удаляем временные файлы, если они существуют
-      if (fs.existsSync(contentPath)) {
-        fs.unlinkSync(contentPath);
+      // Читаем директорию с временными файлами
+      const tempDir = './temp';
+      if (fs.existsSync(tempDir)) {
+        const files = fs.readdirSync(tempDir);
+        
+        // Находим и удаляем все файлы, связанные с данным timestamp
+        const relatedFiles = files.filter(file => file.includes(`_${timestamp}_`) || file.includes(`_${timestamp}.`));
+        
+        console.log(`Найдено ${relatedFiles.length} временных файлов для удаления`);
+        
+        relatedFiles.forEach(file => {
+          const fullPath = `${tempDir}/${file}`;
+          console.log(`Удаляем временный файл: ${fullPath}`);
+          fs.unlinkSync(fullPath);
+        });
       }
       
-      if (fs.existsSync(stylizedPath)) {
-        fs.unlinkSync(stylizedPath);
-      }
-      
-      res.json({ message: "Temporary files deleted successfully" });
+      res.json({ message: "Временные файлы успешно удалены" });
     } catch (error) {
-      console.error("Error deleting temporary files:", error);
-      res.status(500).json({ message: "Failed to delete temporary files", error: String(error) });
+      console.error("Ошибка при удалении временных файлов:", error);
+      res.status(500).json({ message: "Не удалось удалить временные файлы", error: String(error) });
     }
   });
 

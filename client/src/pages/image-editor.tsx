@@ -180,14 +180,30 @@ export default function ImageEditor() {
       const img = await loadImage(imageUrl);
       console.log("Изображение загружено, размеры:", img.width, "x", img.height);
       
-      // Устанавливаем размеры canvas
-      const maxWidth = Math.min(800, window.innerWidth - 40);
-      const maxHeight = 600;
+      // Устанавливаем размеры canvas, увеличиваем максимальную ширину и высоту
+      const maxWidth = Math.min(1024, window.innerWidth - 40);
+      const maxHeight = 800;
       
       // Вычисляем размеры с сохранением пропорций
       let width = img.width;
       let height = img.height;
       
+      // Убедимся, что изображения не слишком маленькие
+      // Если изображение слишком маленькое, увеличиваем его
+      const minSize = 400;
+      if (width < minSize && height < minSize) {
+        if (width > height) {
+          const ratio = minSize / width;
+          width = minSize;
+          height = height * ratio;
+        } else {
+          const ratio = minSize / height;
+          height = minSize;
+          width = width * ratio;
+        }
+      }
+      
+      // Ограничиваем максимальный размер для производительности
       if (width > maxWidth) {
         const ratio = maxWidth / width;
         width = maxWidth;
@@ -377,7 +393,13 @@ export default function ImageEditor() {
                       <canvas
                         ref={canvasRef}
                         className="max-w-full object-contain rounded shadow-sm border border-slate-200"
-                        style={{ minHeight: '300px', minWidth: '300px' }}
+                        style={{ 
+                          minHeight: '400px',
+                          minWidth: '400px',
+                          maxHeight: '600px',
+                          width: '100%',
+                          objectFit: 'contain'
+                        }}
                       />
                     </div>
                   </CardContent>
