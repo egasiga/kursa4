@@ -1,0 +1,43 @@
+Получен запрос на стилизацию изображения
+Изображение и стиль получены. ID стиля: style1
+Путь к файлу стиля: ./styles/1.jpg, styleId: style1, styleNumber: 1
+Исходное изображение сохранено в ./temp/content_1745743029204_jrgxg0.jpg
+Запускаем стилизацию Google Magenta на ./temp/content_1745743029204_jrgxg0.jpg
+Magenta error: 2025-04-27 08:37:09.843430: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Magenta: TensorFlow.js Node and Canvas successfully loaded
+Проверяем наличие библиотеки @magenta/image...
+Magenta: @magenta/image уже установлен
+Magenta: Запуск стилизации Google Magenta...
+Начинаем стилизацию Google Magenta...
+Контентное изображение: ./temp/content_1745743029204_jrgxg0.jpg
+Стилевое изображение: ./styles/1.jpg
+Выходной путь: ./temp/stylized_1745743029204_jrgxg0.jpg
+Сила стиля: 0.9
+Загружаем изображение с помощью Canvas из ./temp/content_1745743029204_jrgxg0.jpg
+Magenta: Изображение изменено до размера: 512x497
+Magenta: Загружаем изображение с помощью Canvas из ./styles/1.jpg
+Magenta: Изображение изменено до размера: 512x504
+Magenta: Загружаем модель стилизации Magenta...
+Magenta error: ============================
+Hi there 👋. Looks like you are running TensorFlow.js in Node.js. To speed things up dramatically, install our node backend, which binds to TensorFlow C++, by running npm i @tensorflow/tfjs-node, or npm i @tensorflow/tfjs-node-gpu if you have CUDA. Then call require('@tensorflow/tfjs-node'); (-gpu suffix for CUDA) at the start of your program. Visit https://github.com/tensorflow/tfjs-node for more details.
+============================
+Magenta: Initialized Arbitrary Style Transfer network
+Magenta: Применяем стилизацию...
+Стилизация превысила таймаут 30000ms, завершаем процесс
+Ошибка при выполнении Google Magenta: Error: Стилизация заняла слишком много времени
+    at Timeout._onTimeout (/home/runner/workspace/server/routes.ts:409:20)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7)
+Отправка стилизованного изображения размером: 69408 байт
+8:37:39 AM [express] POST /api/stylize 200 in 30048ms :: {"originalImage":"data:image/jpeg;base64,/9…
+Google Magenta завершился с кодом null
+Ошибка: 2025-04-27 08:37:09.843430: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+
+============================
+Hi there 👋. Looks like you are running TensorFlow.js in Node.js. To speed things up dramatically, install our node backend, which binds to TensorFlow C++, by running npm i @tensorflow/tfjs-node, or npm i @tensorflow/tfjs-node-gpu if you have CUDA. Then call require('@tensorflow/tfjs-node'); (-gpu suffix for CUDA) at the start of your program. Visit https://github.com/tensorflow/tfjs-node for more details.
+============================
+
+
+Копируем оригинальное изображение как запасной вариант.

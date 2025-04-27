@@ -43,8 +43,8 @@ const magentaImage = require('@magenta/image');
 
 // Константы для настройки стилизации
 const STYLE_STRENGTH = 1.0; // От 0 до 1.0, где 1.0 - максимальная сила стиля
-const MAX_IMAGE_SIZE = 512; // Увеличен размер изображения для лучшего качества
-const STYLIZATION_TIMEOUT = 30000; // Увеличен таймаут для обработки больших изображений (30 секунд)
+const MAX_IMAGE_SIZE = 384; // Оптимальный размер для баланса между качеством и производительностью
+const STYLIZATION_TIMEOUT = 120000; // Увеличиваем таймаут до 2 минут для гарантированного завершения обработки
 
 // Функция для загрузки изображения с помощью Canvas API (совместимо с TensorFlow.js)
 async function loadCanvasImage(imagePath) {

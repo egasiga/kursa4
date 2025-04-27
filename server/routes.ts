@@ -374,19 +374,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Устанавливаем таймаут для процесса стилизации
-        const timeout = 30000; // 30 секунд
+        const timeout = 120000; // 2 минуты для гарантированного завершения процесса Google Magenta
         
         // Создаем обещание с таймаутом для предотвращения зависания процесса
         const stylizationPromise = new Promise<void>((resolve, reject) => {
-          // Запускаем процесс стилизации с пониженным приоритетом
-          const magentaProcess = spawn('nice', [
-            '-n', '10', // Пониженный приоритет
-            'node', 
+          // Запускаем процесс стилизации с использованием Google Magenta
+          const magentaProcess = spawn('node', [
             'server/magenta-stylize.cjs',
             contentPath,
             stylePath,
             outputPath,
-            '0.9' // Немного уменьшаем силу стиля для повышения производительности
+            '1.0' // Используем полную силу стиля Google Magenta
           ]);
           
           let magentaOutput = '';
