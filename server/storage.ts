@@ -61,94 +61,54 @@ export class MemStorage implements IStorage {
   }
 
   private initializeMemeTemplates() {
+    // Устанавливаем базовый URL для изображений (локальные изображения вместо imgflip)
+    const baseImageUrl = "/images/meme-templates/";
+
     const defaultTemplates: InsertMemeTemplate[] = [
       {
-        name: "Отвлекшийся парень",
-        imageUrl: "https://i.imgflip.com/1ur9b0.jpg",
+        name: "Шаблон изображения 1",
+        imageUrl: `${baseImageUrl}1.jpg`,
         isPublic: true,
         textAreas: [
-          { x: 300, y: 100, width: 160, height: 70, defaultText: "Новая вещь" },
-          { x: 160, y: 100, width: 160, height: 70, defaultText: "Я" },
-          { x: 20, y: 100, width: 160, height: 70, defaultText: "Текущая вещь" }
+          { x: 400, y: 200, width: 300, height: 100, defaultText: "Верхний текст" },
+          { x: 400, y: 500, width: 300, height: 100, defaultText: "Нижний текст" }
         ]
       },
       {
-        name: "Мем с Дрейком",
-        imageUrl: "https://i.imgflip.com/30b1gx.jpg",
+        name: "Шаблон изображения 2",
+        imageUrl: `${baseImageUrl}2.jpg`,
         isPublic: true,
         textAreas: [
-          { x: 320, y: 10, width: 300, height: 300, defaultText: "Плохой вариант" },
-          { x: 320, y: 400, width: 300, height: 300, defaultText: "Хороший вариант" }
+          { x: 350, y: 150, width: 300, height: 100, defaultText: "Верхний текст" },
+          { x: 350, y: 350, width: 300, height: 100, defaultText: "Нижний текст" }
         ]
       },
       {
-        name: "Две кнопки",
-        imageUrl: "https://i.imgflip.com/1g8my4.jpg",
+        name: "Шаблон изображения 3",
+        imageUrl: `${baseImageUrl}3.jpg`,
         isPublic: true,
         textAreas: [
-          { x: 150, y: 90, width: 140, height: 90, defaultText: "Кнопка 1" },
-          { x: 325, y: 90, width: 140, height: 90, defaultText: "Кнопка 2" },
-          { x: 240, y: 450, width: 200, height: 100, defaultText: "Потеющий человек" }
+          { x: 400, y: 200, width: 350, height: 100, defaultText: "Основной текст" },
+          { x: 400, y: 400, width: 350, height: 100, defaultText: "Дополнительный текст" }
         ]
       },
       {
-        name: "Уходящий парень",
-        imageUrl: "https://i.imgflip.com/1jwhww.jpg",
+        name: "Шаблон изображения 4",
+        imageUrl: `${baseImageUrl}4.jpg`,
         isPublic: true,
         textAreas: [
-          { x: 240, y: 50, width: 200, height: 100, defaultText: "Уходящая девушка" },
-          { x: 400, y: 300, width: 200, height: 100, defaultText: "Новая девушка" }
+          { x: 350, y: 150, width: 300, height: 100, defaultText: "Верхний текст" },
+          { x: 350, y: 350, width: 300, height: 100, defaultText: "Нижний текст" }
         ]
       },
       {
-        name: "Жалующаяся мама",
-        imageUrl: "https://i.imgflip.com/4acd7j.png",
+        name: "Шаблон изображения 5",
+        imageUrl: `${baseImageUrl}5.jpg`,
         isPublic: true,
         textAreas: [
-          { x: 160, y: 70, width: 300, height: 100, defaultText: "Жалоба 1" },
-          { x: 160, y: 270, width: 300, height: 100, defaultText: "Жалоба 2" },
-          { x: 160, y: 470, width: 300, height: 100, defaultText: "Жалоба 3" }
-        ]
-      },
-      {
-        name: "Один дома",
-        imageUrl: "https://i.imgflip.com/1otk96.jpg",
-        isPublic: true,
-        textAreas: [
-          { x: 350, y: 220, width: 300, height: 100, defaultText: "Текст мема" }
-        ]
-      },
-      {
-        name: "Нервничающий попугай",
-        imageUrl: "https://i.imgflip.com/2o83uh.png",
-        isPublic: true,
-        textAreas: [
-          { x: 160, y: 100, width: 250, height: 100, defaultText: "Волнующая ситуация" }
-        ]
-      },
-      {
-        name: "Умный чернокожий",
-        imageUrl: "https://i.imgflip.com/1h7in3.jpg",
-        isPublic: true,
-        textAreas: [
-          { x: 250, y: 130, width: 300, height: 100, defaultText: "Умная мысль" }
-        ]
-      },
-      {
-        name: "Разговор с байкером",
-        imageUrl: "https://i.imgflip.com/4t0m5.jpg",
-        isPublic: true,
-        textAreas: [
-          { x: 280, y: 50, width: 250, height: 100, defaultText: "Первая фраза" },
-          { x: 280, y: 220, width: 250, height: 100, defaultText: "Вторая фраза" }
-        ]
-      },
-      {
-        name: "Ужасная Реализация",
-        imageUrl: "https://i.imgflip.com/1e7ql7.jpg",
-        isPublic: true,
-        textAreas: [
-          { x: 300, y: 180, width: 260, height: 100, defaultText: "Момент осознания" }
+          { x: 300, y: 100, width: 280, height: 80, defaultText: "Текст 1" },
+          { x: 300, y: 200, width: 280, height: 80, defaultText: "Текст 2" },
+          { x: 300, y: 300, width: 280, height: 80, defaultText: "Текст 3" }
         ]
       }
     ];

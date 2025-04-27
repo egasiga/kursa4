@@ -104,11 +104,11 @@ export default function MemeImageEditor({
         // Сначала уведомляем родительский компонент о готовности canvas
         onCanvasReady(canvasRef.current!);
         
-        // Текстовая функциональность отключена
-        // setTimeout(() => {
-        //   console.log("Вызываем onTextRender из MemeImageEditor");
-        //   onTextRender();
-        // }, 200);
+        // Включаем отрисовку текста поверх изображения
+        setTimeout(() => {
+          console.log("Вызываем onTextRender из MemeImageEditor");
+          onTextRender();
+        }, 200);
       }
     };
   }, [filters, onCanvasReady, onTextRender, textContent]);
