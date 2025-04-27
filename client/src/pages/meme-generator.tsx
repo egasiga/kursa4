@@ -15,47 +15,63 @@ import { Download, Save, Upload, RotateCcw, Plus, Wand2 } from "lucide-react";
 import { SavedMeme } from "@shared/schema";
 
 // Шаблоны мемов
+// Импортируем напрямую изображения
+import template1 from "@assets/1_1745769260531.jpg";  // Exit 12
+import template2 from "@assets/2_1745769277495.jpg";  // Expanding Brain
+import template3 from "@assets/3.jpg";                // Two Paths
+import template4 from "@assets/3.png";                // Megamind
+import template5 from "@assets/4.jpg";                // Bus Seats
+import template6 from "@assets/5.jpg";                // Red Button
+import template7 from "@assets/6.jpg";                // Group Photo
+
+// Также импортируем стили
+import style1 from "@assets/1.jpg";
+import style2 from "@assets/2.jpg";
+import style3 from "@assets/3.jpg";
+import style4 from "@assets/4.jpg";
+import style5 from "@assets/5.jpg";
+
 const MEME_TEMPLATES = [
   { 
     id: "template1",
     name: "Exit 12",
-    imageUrl: "/assets/meme-templates/1.jpg",
+    imageUrl: template1,
     description: "Мем со съездом с трассы",
   },
   { 
     id: "template2",
     name: "Expanding Brain",
-    imageUrl: "/assets/meme-templates/2.jpg",
+    imageUrl: template2,
     description: "Мем с развивающимся интеллектом",
   },
   { 
     id: "template3",
     name: "Two Paths",
-    imageUrl: "/assets/meme-templates/3.jpg", 
+    imageUrl: template3, 
     description: "Мем с выбором пути",
   },
   { 
     id: "template4",
     name: "Megamind",
-    imageUrl: "/assets/meme-templates/4.png",
+    imageUrl: template4,
     description: "Мем с персонажем Мегамозг",
   },
   { 
     id: "template5",
     name: "Bus Seats",
-    imageUrl: "/assets/meme-templates/5.jpg",
+    imageUrl: template5,
     description: "Мем с разными сторонами автобуса",
   },
   { 
     id: "template6",
     name: "Red Button",
-    imageUrl: "/assets/meme-templates/6.jpg",
+    imageUrl: template6,
     description: "Мем с красной кнопкой",
   },
   { 
     id: "template7",
     name: "Group Photo",
-    imageUrl: "/assets/meme-templates/7.jpg",
+    imageUrl: template7,
     description: "Мем с групповым фото",
   },
 ];
@@ -65,31 +81,31 @@ const STYLES = [
   {
     id: "style1",
     name: "Звездная ночь (Ван Гог)",
-    imageUrl: "/assets/1.jpg",
+    imageUrl: style1,
     description: "Яркий экспрессионизм, завихрения, насыщенные цвета",
   },
   {
     id: "style2",
     name: "Крик (Мунк)",
-    imageUrl: "/assets/2.jpg",
+    imageUrl: style2,
     description: "Искаженные линии, тревожные цвета, эмоциональное напряжение",
   },
   {
     id: "style3",
     name: "Композиция (Кандинский)",
-    imageUrl: "/assets/3.jpg",
+    imageUrl: style3,
     description: "Абстрактные формы, геометрические линии, яркие цвета",
   },
   {
     id: "style4",
     name: "Портрет (Пикассо)",
-    imageUrl: "/assets/4.jpg",
+    imageUrl: style4,
     description: "Кубизм, асимметрия, фрагментированные формы",
   },
   {
     id: "style5",
     name: "Водяные лилии (Моне)",
-    imageUrl: "/assets/5.jpg",
+    imageUrl: style5,
     description: "Импрессионизм, мягкие цвета, размытые формы",
   },
 ];
@@ -376,7 +392,7 @@ export default function MemeGenerator() {
       }
     } else if (customImage) {
       // Если загружено пользовательское изображение
-      setCustomImage(originalImage);
+      setCustomImage(originalImage as string);
     }
     
     setIsStyleApplied(false);
@@ -397,7 +413,7 @@ export default function MemeGenerator() {
       name: memeName,
       imageUrl: imageData,
       userId: 1, // Используем дефолтный userId
-      templateId: selectedTemplate?.id || null,
+      templateId: selectedTemplate ? 1 : null, // Используем числовой ID
       textContent,
       appliedFilters: [filters],
       aiStyle: isStyleApplied && selectedStyle ? selectedStyle.id : null,
