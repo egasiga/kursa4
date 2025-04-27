@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { CirclePicker } from "react-color";
-import { AlignLeft, AlignCenter, AlignRight, Trash2, MoveHorizontal, MoveVertical } from "lucide-react";
+import { AlignLeft, AlignCenter, AlignRight, Trash2, Info } from "lucide-react";
 
 interface TextEditorProps {
   areaIndex: number;
@@ -207,97 +207,11 @@ export default function TextEditor({
       
       {onPositionChange && (
         <div className="space-y-2">
-          <Label className="text-xs">Положение текста</Label>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs mb-1 block">
-                Перемещение по горизонтали
-              </Label>
-              <div className="flex items-center gap-2">
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  className="h-8 w-8 p-0"
-                  onClick={() => {
-                    // Предполагаем, что position передается как часть style для совместимости с компонентом
-                    // Но на самом деле position - это отдельное поле в родительском компоненте
-                    const currentX = style.position?.x || 400;
-                    const currentY = style.position?.y || 400;
-                    onPositionChange(currentX - 10, currentY);
-                  }}
-                >
-                  <MoveHorizontal className="h-4 w-4 rotate-180" />
-                </Button>
-                <Slider
-                  value={[0]} // Значение не важно, так как мы просто используем шаг
-                  min={-50}
-                  max={50}
-                  step={5}
-                  onValueChange={(values) => {
-                    const currentX = style.position?.x || 400;
-                    const currentY = style.position?.y || 400;
-                    onPositionChange(currentX + values[0], currentY);
-                  }}
-                  className="flex-1"
-                />
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  className="h-8 w-8 p-0"
-                  onClick={() => {
-                    const currentX = style.position?.x || 400;
-                    const currentY = style.position?.y || 400;
-                    onPositionChange(currentX + 10, currentY);
-                  }}
-                >
-                  <MoveHorizontal className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            
-            <div>
-              <Label className="text-xs mb-1 block">
-                Перемещение по вертикали
-              </Label>
-              <div className="flex items-center gap-2">
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  className="h-8 w-8 p-0"
-                  onClick={() => {
-                    const currentX = style.position?.x || 400;
-                    const currentY = style.position?.y || 400;
-                    onPositionChange(currentX, currentY - 10);
-                  }}
-                >
-                  <MoveVertical className="h-4 w-4 rotate-180" />
-                </Button>
-                <Slider
-                  value={[0]} // Значение не важно, так как мы просто используем шаг
-                  min={-50}
-                  max={50}
-                  step={5}
-                  onValueChange={(values) => {
-                    const currentX = style.position?.x || 400;
-                    const currentY = style.position?.y || 400;
-                    onPositionChange(currentX, currentY + values[0]);
-                  }}
-                  className="flex-1"
-                />
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  className="h-8 w-8 p-0"
-                  onClick={() => {
-                    const currentX = style.position?.x || 400;
-                    const currentY = style.position?.y || 400;
-                    onPositionChange(currentX, currentY + 10);
-                  }}
-                >
-                  <MoveVertical className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 mt-2">
+            <InformationCircle className="h-4 w-4 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
+              Используйте мышь, чтобы перетащить текст в нужное место на изображении
+            </p>
           </div>
         </div>
       )}

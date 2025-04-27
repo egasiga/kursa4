@@ -177,12 +177,23 @@ export default function MemeTemplateSelector({
       // Устанавливаем флаг перетаскивания
       const textId = clickedTextElement.id;
       
+      // Запоминаем начальное положение мыши и текста для расчета смещения
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const initialTextX = clickedTextElement.position.x;
+      const initialTextY = clickedTextElement.position.y;
+      
       // Слушаем события перемещения мыши и отпускания
       const handleMouseMove = (moveEvent: MouseEvent) => {
-        const canvasRect = canvas.getBoundingClientRect();
-        const newX = moveEvent.clientX - canvasRect.left;
-        const newY = moveEvent.clientY - canvasRect.top;
+        // Рассчитываем смещение от начальной позиции
+        const deltaX = moveEvent.clientX - startX;
+        const deltaY = moveEvent.clientY - startY;
         
+        // Применяем смещение к начальной позиции текста
+        const newX = initialTextX + deltaX;
+        const newY = initialTextY + deltaY;
+        
+        // Обновляем позицию текста
         onTextPositionUpdate(textId, newX, newY);
       };
       
@@ -195,7 +206,34 @@ export default function MemeTemplateSelector({
       // Добавляем обработчики событий
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
+      
+      // Изменяем курсор на "grabbing" для указания, что элемент перетаскивается
+      canvas.style.cursor = "grabbing";
     }
+  };
+
+  // Отслеживание положения мыши для изменения курсора
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Проверяем, находится ли мышь над каким-либо текстовым элементом
+    const isOverText = textContent.some((item) => {
+      const textWidth = item.text.length * (item.style.fontSize / 1.5);
+      const textHeight = item.style.fontSize * 1.2;
+      
+      return (
+        Math.abs(x - item.position.x) < textWidth / 2 &&
+        Math.abs(y - item.position.y) < textHeight / 2
+      );
+    });
+    
+    // Изменяем курсор в зависимости от того, находится ли мышь над текстом
+    canvas.style.cursor = isOverText ? "grab" : "default";
   };
 
   return (
@@ -204,7 +242,12 @@ export default function MemeTemplateSelector({
         ref={canvasRef}
         className="max-w-full max-h-[600px] object-contain shadow-md"
         onMouseDown={handleMouseDown}
-        style={{ cursor: "default" }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => {
+          if (canvasRef.current) {
+            canvasRef.current.style.cursor = "default";
+          }
+        }}
       />
     </div>
   );

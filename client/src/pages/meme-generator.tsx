@@ -616,11 +616,9 @@ export default function MemeGenerator() {
                                 value={item.text}
                                 style={{
                                   ...item.style,
-                                  position: item.position,
                                 }}
                                 onChange={(value) => handleTextChange(item.id, value)}
                                 onStyleChange={(styleKey, value) => handleTextStyleChange(item.id, styleKey, value)}
-                                onPositionChange={(x, y) => handleTextPositionChange(item.id, x, y)}
                                 onRemove={() => handleRemoveText(item.id)}
                               />
                             ))}
@@ -692,63 +690,7 @@ export default function MemeGenerator() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold mb-4">Художественная стилизация</h3>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      {STYLES.map((style) => (
-                        <div
-                          key={style.id}
-                          className={`cursor-pointer rounded-md overflow-hidden border hover:border-primary transition-colors ${
-                            selectedStyle?.id === style.id ? "ring-2 ring-primary" : ""
-                          }`}
-                          onClick={() => handleStyleSelect(style)}
-                        >
-                          <div className="aspect-square relative">
-                            <img
-                              src={style.imageUrl}
-                              alt={style.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="p-2">
-                            <p className="text-xs font-medium truncate">{style.name}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {selectedStyle && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">
-                          {selectedStyle.description}
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={handleApplyStyle}
-                            disabled={isStylizing || !selectedStyle}
-                            className="flex-1 gap-2"
-                          >
-                            <Wand2 className="w-4 h-4" />
-                            {isStylizing ? "Применение..." : "Применить стиль"}
-                          </Button>
-                          {isStyleApplied && (
-                            <Button
-                              variant="outline"
-                              onClick={handleRevertStyle}
-                              className="flex-1"
-                            >
-                              <RotateCcw className="w-4 h-4 mr-2" />
-                              Отменить стиль
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+
             </>
           ) : (
             <Card>
