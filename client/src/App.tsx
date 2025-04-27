@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import MemeGenerator from "@/pages/meme-generator";
-import SimpleMemeGenerator from "@/pages/simple-meme-generator";
 import CollageCreator from "@/pages/collage-creator";
 import Templates from "@/pages/templates";
 import ImageEditor from "@/pages/image-editor";
@@ -20,9 +19,6 @@ function Router() {
       {/* Добавляем синоним для страницы генератора мемов */}
       <Route path="/memes" component={MemeGenerator} />
       <Route path="/memes/:id" component={MemeGenerator} />
-      {/* Новая страница генератора мемов (упрощенная) */}
-      <Route path="/simple-meme" component={SimpleMemeGenerator} />
-      <Route path="/simple-meme/:id" component={SimpleMemeGenerator} />
       <Route path="/collage-creator" component={CollageCreator} />
       <Route path="/templates" component={Templates} />
       <Route path="/editor" component={ImageEditor} />
