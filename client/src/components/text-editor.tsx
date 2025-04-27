@@ -211,25 +211,32 @@ export default function TextEditor({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-xs mb-1 block">
-                По горизонтали {style.offsetX || 0}
+                Перемещение по горизонтали
               </Label>
               <div className="flex items-center gap-2">
                 <Button 
                   size="sm"
                   variant="outline"
                   className="h-8 w-8 p-0"
-                  onClick={() => onPositionChange((style.offsetX || 0) - 10, style.offsetY || 0)}
+                  onClick={() => {
+                    // Предполагаем, что position передается как часть style для совместимости с компонентом
+                    // Но на самом деле position - это отдельное поле в родительском компоненте
+                    const currentX = style.position?.x || 400;
+                    const currentY = style.position?.y || 400;
+                    onPositionChange(currentX - 10, currentY);
+                  }}
                 >
                   <MoveHorizontal className="h-4 w-4 rotate-180" />
                 </Button>
                 <Slider
-                  value={[style.offsetX || 0]}
-                  min={-100}
-                  max={100}
-                  step={1}
+                  value={[0]} // Значение не важно, так как мы просто используем шаг
+                  min={-50}
+                  max={50}
+                  step={5}
                   onValueChange={(values) => {
-                    onStyleChange("offsetX", values[0]);
-                    onPositionChange(values[0], style.offsetY || 0);
+                    const currentX = style.position?.x || 400;
+                    const currentY = style.position?.y || 400;
+                    onPositionChange(currentX + values[0], currentY);
                   }}
                   className="flex-1"
                 />
@@ -237,7 +244,11 @@ export default function TextEditor({
                   size="sm"
                   variant="outline"
                   className="h-8 w-8 p-0"
-                  onClick={() => onPositionChange((style.offsetX || 0) + 10, style.offsetY || 0)}
+                  onClick={() => {
+                    const currentX = style.position?.x || 400;
+                    const currentY = style.position?.y || 400;
+                    onPositionChange(currentX + 10, currentY);
+                  }}
                 >
                   <MoveHorizontal className="h-4 w-4" />
                 </Button>
@@ -246,25 +257,30 @@ export default function TextEditor({
             
             <div>
               <Label className="text-xs mb-1 block">
-                По вертикали {style.offsetY || 0}
+                Перемещение по вертикали
               </Label>
               <div className="flex items-center gap-2">
                 <Button 
                   size="sm"
                   variant="outline"
                   className="h-8 w-8 p-0"
-                  onClick={() => onPositionChange(style.offsetX || 0, (style.offsetY || 0) - 10)}
+                  onClick={() => {
+                    const currentX = style.position?.x || 400;
+                    const currentY = style.position?.y || 400;
+                    onPositionChange(currentX, currentY - 10);
+                  }}
                 >
                   <MoveVertical className="h-4 w-4 rotate-180" />
                 </Button>
                 <Slider
-                  value={[style.offsetY || 0]}
-                  min={-100}
-                  max={100}
-                  step={1}
+                  value={[0]} // Значение не важно, так как мы просто используем шаг
+                  min={-50}
+                  max={50}
+                  step={5}
                   onValueChange={(values) => {
-                    onStyleChange("offsetY", values[0]);
-                    onPositionChange(style.offsetX || 0, values[0]);
+                    const currentX = style.position?.x || 400;
+                    const currentY = style.position?.y || 400;
+                    onPositionChange(currentX, currentY + values[0]);
                   }}
                   className="flex-1"
                 />
@@ -272,7 +288,11 @@ export default function TextEditor({
                   size="sm"
                   variant="outline"
                   className="h-8 w-8 p-0"
-                  onClick={() => onPositionChange(style.offsetX || 0, (style.offsetY || 0) + 10)}
+                  onClick={() => {
+                    const currentX = style.position?.x || 400;
+                    const currentY = style.position?.y || 400;
+                    onPositionChange(currentX, currentY + 10);
+                  }}
                 >
                   <MoveVertical className="h-4 w-4" />
                 </Button>

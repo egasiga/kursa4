@@ -216,55 +216,43 @@ export default function MemeGenerator() {
     }
     
     console.log('Canvas размеры:', canvasRef.width, 'x', canvasRef.height);
+    console.log('Текстовый контент:', textContent);
     
-    // Используем отложенный вызов для обеспечения правильной отрисовки
-    setTimeout(() => {
-      const canvasWidth = canvasRef.width;
-      const canvasHeight = canvasRef.height;
-      const canvasScale = canvasWidth / 1200; // Базовый масштаб относительно стандартного размера
+    textContent.forEach((item) => {
+      // Настраиваем шрифт
+      ctx.font = `bold ${item.style.fontSize}px ${item.style.fontFamily}`;
+      ctx.textAlign = item.style.align as CanvasTextAlign;
       
-      console.log('Масштаб канваса:', canvasScale, 'Размеры:', canvasWidth, 'x', canvasHeight);
-      console.log("Отрисовка текста. Элементов:", textContent.length);
+      // Настройка стиля для обводки
+      ctx.lineWidth = item.style.strokeWidth;
+      ctx.strokeStyle = item.style.strokeColor;
       
-      // Проходим по всем текстовым элементам
-      textContent.forEach((item) => {
-        // Настраиваем размер шрифта с учетом масштаба
-        const scaledFontSize = Math.max(16, item.style.fontSize * canvasScale);
-        ctx.font = `bold ${scaledFontSize}px ${item.style.fontFamily}`;
-        ctx.textAlign = item.style.align as CanvasTextAlign;
+      console.log('Отрисовка текста:', item.text, 'позиция:', item.position?.x, item.position?.y);
+      
+      // Получаем позицию текста
+      const position = item.position || { x: canvasRef.width / 2, y: canvasRef.height / 2 };
+      
+      // Разбиваем текст на строки при необходимости
+      const maxWidth = canvasRef.width * 0.8; // 80% ширины холста
+      const lines = wrapText(ctx, item.text, maxWidth);
+      
+      // Рисуем каждую строку текста
+      const lineHeight = item.style.fontSize * 1.2;
+      let offsetY = 0;
+      
+      lines.forEach((line, i) => {
+        const lineY = position.y + offsetY - (lines.length - 1) * lineHeight / 2;
         
-        // В новой реализации используем центр изображения как базовую точку
-        const baseX = canvasWidth / 2 + (item.style.offsetX || 0);
-        const baseY = canvasHeight / 2 + (item.style.offsetY || 0);
+        // Рисуем обводку
+        ctx.strokeText(line, position.x, lineY);
         
-        console.log('Отрисовка текста:', item.text, 'позиция:', baseX, baseY, 'шрифт:', ctx.font);
+        // Рисуем сам текст
+        ctx.fillStyle = item.style.color;
+        ctx.fillText(line, position.x, lineY);
         
-        // Настройка стиля для обводки
-        ctx.lineWidth = Math.max(3, item.style.strokeWidth);
-        ctx.strokeStyle = item.style.strokeColor;
-        
-        // Разбиваем текст на строки
-        const maxWidth = canvasWidth * 0.8; // 80% ширины холста
-        const lines = wrapText(ctx, item.text, maxWidth);
-        
-        // Рисуем каждую строку текста
-        const lineHeight = scaledFontSize * 1.2;
-        let offsetY = 0;
-        
-        lines.forEach((line, i) => {
-          const lineY = baseY + offsetY - (lines.length - 1) * lineHeight / 2;
-          
-          // Рисуем обводку (увеличенную для лучшей видимости)
-          ctx.strokeText(line, baseX, lineY);
-          
-          // Рисуем сам текст
-          ctx.fillStyle = item.style.color;
-          ctx.fillText(line, baseX, lineY);
-          
-          offsetY += lineHeight;
-        });
+        offsetY += lineHeight;
       });
-    }, 100);
+    });
   };
   
   // Вспомогательная функция для разбиения текста на строки
@@ -536,10 +524,10 @@ export default function MemeGenerator() {
                                 textId={item.id}
                                 label={`Текст`}
                                 value={item.text}
-                                style={item.style}
+                                style={{...item.style, position: item.position}}
                                 onChange={(value) => handleTextChange(item.id, value)}
                                 onStyleChange={(styleKey, value) => handleTextStyleChange(item.id, styleKey, value)}
-                                onPositionChange={(offsetX, offsetY) => handleTextPositionChange(item.id, offsetX, offsetY)}
+                                onPositionChange={(x, y) => handleTextPositionChange(item.id, x, y)}
                                 onRemove={() => {
                                   setTextContent((prev) => prev.filter((t) => t.id !== item.id));
                                 }}

@@ -14,8 +14,10 @@ interface MemeImageEditorProps {
       strokeColor: string;
       strokeWidth: number;
       align: string;
-      offsetX?: number;
-      offsetY?: number;
+    };
+    position?: {
+      x: number;
+      y: number;
     };
   }>;
   filters: {
@@ -25,7 +27,7 @@ interface MemeImageEditorProps {
   };
   onCanvasReady: (canvas: HTMLCanvasElement) => void;
   onTextRender: () => void;
-  onUpdateTextPosition?: (id: string, offsetX: number, offsetY: number) => void;
+  onUpdateTextPosition?: (id: string, x: number, y: number) => void;
 }
 
 export default function MemeImageEditor({
@@ -159,25 +161,19 @@ export default function MemeImageEditor({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // В новой версии нам не нужны textAreas из шаблона
-    // Просто проверяем, попали ли мы в область текстового элемента
-    // Центр canvas как базовая точка + смещение текста
-    const canvasWidth = canvasRef.current.width;
-    const canvasHeight = canvasRef.current.height;
-    
     // Проходим по всем текстовым элементам и проверяем, попал ли клик в их область
     let clickedTextId: string | null = null;
     
     textContent.forEach(item => {
-      const centerX = canvasWidth / 2 + (item.style.offsetX || 0);
-      const centerY = canvasHeight / 2 + (item.style.offsetY || 0);
+      // Используем position для определения местоположения текста
+      const position = item.position || { x: canvasRef.current!.width / 2, y: canvasRef.current!.height / 2 };
       
       // Размер области нажатия (зависит от размера шрифта)
       const hitSize = Math.max(100, item.style.fontSize * 2); 
       
       if (
-        Math.abs(x - centerX) < hitSize / 2 &&
-        Math.abs(y - centerY) < hitSize / 2
+        Math.abs(x - position.x) < hitSize / 2 &&
+        Math.abs(y - position.y) < hitSize / 2
       ) {
         clickedTextId = item.id;
       }
@@ -210,15 +206,14 @@ export default function MemeImageEditor({
     const deltaX = x - draggingText.startX;
     const deltaY = y - draggingText.startY;
     
-    // Получаем текущее смещение для активного текста
+    // Получаем текущее положение для активного текста
     const textItem = textContent.find(t => t.id === activeTextId);
     if (!textItem) return;
     
-    const currentOffsetX = textItem.style.offsetX || 0;
-    const currentOffsetY = textItem.style.offsetY || 0;
+    const position = textItem.position || { x: canvasRef.current.width / 2, y: canvasRef.current.height / 2 };
     
-    // Обновляем позицию текста
-    onUpdateTextPosition(activeTextId, currentOffsetX + deltaX, currentOffsetY + deltaY);
+    // Обновляем позицию текста с новыми координатами
+    onUpdateTextPosition(activeTextId, position.x + deltaX, position.y + deltaY);
     
     // Обновляем начальную позицию для следующего движения
     setDraggingText({
