@@ -209,6 +209,14 @@ export default function MemeGenerator() {
       ...prev,
       [filterType]: value,
     }));
+    
+    // После изменения фильтров также обновляем текст
+    setTimeout(() => {
+      if (canvasRef) {
+        console.log('Обновляем текст после изменения фильтров');
+        renderTextOnCanvas();
+      }
+    }, 300);
   };
 
 
@@ -257,6 +265,14 @@ export default function MemeGenerator() {
       contrast: 100,
       saturation: 100,
     });
+
+    // После сброса фильтров также обновляем текст
+    setTimeout(() => {
+      if (canvasRef) {
+        console.log('Обновляем текст после сброса фильтров');
+        renderTextOnCanvas();
+      }
+    }, 300);
   };
   
   // Обработчики для стилизации
@@ -328,6 +344,14 @@ export default function MemeGenerator() {
       imageUrl: originalImageUrl
     });
     setIsStyleApplied(false);
+    
+    // После отмены стиля также обновляем текст
+    setTimeout(() => {
+      if (canvasRef) {
+        console.log('Обновляем текст после отмены стиля');
+        renderTextOnCanvas();
+      }
+    }, 300);
     
     toast({
       title: "Original image restored",
@@ -438,10 +462,43 @@ export default function MemeGenerator() {
                     </TabsList>
                     <div className="p-6">
                       <TabsContent value="text" className="m-0">
-                        <div className="text-center py-6">
-                          <p className="mb-4 text-muted-foreground">Функциональность текста временно отключена</p>
-                          <p className="text-sm text-gray-500">Мы работаем над улучшением текстового редактора</p>
-                        </div>
+                        {textContent.length > 0 ? (
+                          <div className="space-y-4">
+                            {textContent.map((item) => (
+                              <TextEditor
+                                key={item.id}
+                                areaIndex={0} // используем 0 как фиктивный параметр
+                                textId={item.id}
+                                label={`Текст ${textContent.indexOf(item) + 1}`}
+                                value={item.text}
+                                style={{...item.style, position: item.position}}
+                                onChange={(value) => handleTextChange(item.id, value)}
+                                onStyleChange={(styleKey, value) => handleTextStyleChange(item.id, styleKey, value)}
+                                onPositionChange={(x, y) => handleTextPositionChange(item.id, x, y)}
+                                onRemove={() => {
+                                  setTextContent((prev) => prev.filter((t) => t.id !== item.id));
+                                }}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-6">
+                            <p className="mb-4 text-muted-foreground">Нет текстовых элементов</p>
+                            <Button onClick={handleAddText} variant="outline" className="gap-2">
+                              <Plus className="w-4 h-4" />
+                              Добавить текст
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {textContent.length > 0 && (
+                          <div className="mt-6 text-center">
+                            <Button onClick={handleAddText} variant="outline" className="gap-2">
+                              <Plus className="w-4 h-4" />
+                              Добавить текст
+                            </Button>
+                          </div>
+                        )}
                       </TabsContent>
                       <TabsContent value="filters" className="m-0">
                         <div className="space-y-6">
