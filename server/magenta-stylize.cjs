@@ -2,11 +2,10 @@
  * Реализация стилизации изображений с использованием официальной библиотеки Google Magenta
  */
 
-// Самым первым делом подключаем TensorFlow Node - это ускорит стилизацию
-// согласно рекомендации в предупреждении TensorFlow
-const tf = require('@tensorflow/tfjs-node');
-console.log('TensorFlow.js Node версия:', tf.version);
-console.log('TensorFlow.js бэкенд:', tf.getBackend());
+// Подключаем TensorFlow Node - это ускорит стилизацию
+// согласно рекомендации в предупреждении TensorFlow, но не устанавливаем его явно
+// Google Magenta сама выберет подходящий бэкенд
+require('@tensorflow/tfjs-node');
 
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -128,10 +127,8 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     const contentCanvasImage = await loadCanvasImage(contentImagePath);
     const styleCanvasImage = await loadCanvasImage(styleImagePath);
 
-    // Создаем объект стилизатора Magenta с явным указанием бэкенда tensorflow
-    const styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
-      backend: 'tensorflow' // Указываем использовать TensorFlow.js Node в качестве бэкенда
-    });
+    // Создаем объект стилизатора Magenta, не указывая бэкенд, чтобы использовать настройки по умолчанию
+    const styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork();
 
     // Загружаем предобученную модель (это происходит автоматически)
     console.log('Загружаем модель стилизации Magenta...');
@@ -170,10 +167,10 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     try {
       console.log('Пробуем альтернативный метод стилизации Magenta...');
 
-      // Создаем объект стилизатора с явно указанным бэкендом tensorflow для использования TensorFlow.js Node
+      // Создаем объект стилизатора с указанием URL к моделям
       const simpleStyleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
-        modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json',
-        backend: 'tensorflow' // Используем TensorFlow.js Node для улучшения производительности
+        modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json'
+        // Не указываем бэкенд, чтобы использовать настройку по умолчанию
       });
 
       await simpleStyleTransfer.initialize();
