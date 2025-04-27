@@ -2,10 +2,13 @@
  * Реализация стилизации изображений с использованием официальной библиотеки Google Magenta
  */
 
-// Подключаем TensorFlow Node - это ускорит стилизацию
-// согласно рекомендации в предупреждении TensorFlow, но не устанавливаем его явно
-// Google Magenta сама выберет подходящий бэкенд
-require('@tensorflow/tfjs-node');
+// Подключаем TensorFlow Node и инициализируем его ПЕРЕД загрузкой других библиотек
+// Это критично, так как TensorFlow.js требует явной инициализации
+// Устанавливаем его глобально и регистрируем как бэкенд
+const tf = require('@tensorflow/tfjs-node');
+// Явно сообщаем, что мы используем бэкенд tensorflow-node
+console.log('TensorFlow.js version:', tf.version);
+console.log('TensorFlow.js backend:', tf.getBackend());
 
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -42,9 +45,13 @@ const magentaImage = require('@magenta/image');
 
 // Создаем класс-обертку для Google Magenta, чтобы упростить использование
 class MagentaStyler {
-  constructor() {
-    // Создаем объект стилизатора Magenta
-    this.styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork();
+  constructor(options = {}) {
+    // Создаем объект стилизатора Magenta с указанием конкретного URL и бэкенда
+    this.styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
+      // Явно указываем URL для модели
+      modelUrl: options.modelUrl || 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json',
+      backend: 'tensorflow'  // Явно указываем бэкенд в виде строки
+    });
     this.initialized = false;
   }
 
@@ -52,9 +59,17 @@ class MagentaStyler {
   async initialize() {
     if (!this.initialized) {
       console.log('Инициализация Google Magenta стилизатора...');
-      await this.styleTransfer.initialize();
-      this.initialized = true;
-      console.log('Google Magenta стилизатор инициализирован!');
+      // Убеждаемся, что TensorFlow.js корректно настроен перед инициализацией
+      console.log('Текущий бэкенд TensorFlow:', tf.getBackend());
+      
+      try {
+        await this.styleTransfer.initialize();
+        this.initialized = true;
+        console.log('Google Magenta стилизатор инициализирован!');
+      } catch (error) {
+        console.error('Ошибка инициализации стилизатора:', error.message);
+        throw error;
+      }
     }
   }
 
@@ -196,9 +211,8 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     try {
       console.log('Пробуем альтернативный метод стилизации Magenta с указанием URL...');
 
-      // Создаем объект стилизатора с явным указанием URL моделей
-      const backupStyler = new MagentaStyler();
-      backupStyler.styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
+      // Создаем объект стилизатора с явным указанием URL моделей и backend
+      const backupStyler = new MagentaStyler({
         modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json'
       });
       
