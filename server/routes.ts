@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import express, { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
@@ -15,6 +15,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     next();
   });
+  
+  // Статические файлы из корневой директории public
+  app.use(express.static(path.join(process.cwd(), 'public')));
 
   // Meme templates
   app.get("/api/templates", async (req: Request, res: Response) => {
