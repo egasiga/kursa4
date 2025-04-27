@@ -369,51 +369,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fs.writeFileSync(contentPath, Buffer.from(base64Data, 'base64'));
       console.log(`Исходное изображение сохранено в ${contentPath}`);
       
-      // Используем Python с PIL для более надежной стилизации изображений
-      console.log(`Запускаем стилизацию с помощью Python на ${contentPath}`);
+      // Используем Google Magenta для стилизации изображений с оптимизированными настройками
+      console.log(`Запускаем стилизацию Google Magenta на ${contentPath}`);
       
       try {
         // Устанавливаем таймаут для процесса стилизации
-        const timeout = 30000; // 30 секунд достаточно для Python-стилизации
+        const timeout = 120000; // 2 минуты для гарантированного завершения процесса Google Magenta
         
         // Создаем обещание с таймаутом для предотвращения зависания процесса
         const stylizationPromise = new Promise<void>((resolve, reject) => {
-          // Запускаем Python-скрипт для стилизации
-          const pythonProcess = spawn('python3', [
-            'server/stylization.py',
+          // Запускаем процесс стилизации с использованием Google Magenta
+          const magentaProcess = spawn('node', [
+            'server/magenta-stylize.cjs',
             contentPath,
             stylePath,
-            outputPath
+            outputPath,
+            '1.0' // Используем полную силу стиля Google Magenta
           ]);
           
-          let pythonOutput = '';
-          let pythonError = '';
+          let magentaOutput = '';
+          let magentaError = '';
           
-          pythonProcess.stdout.on('data', (data) => {
-            pythonOutput += data.toString();
-            console.log(`Python: ${data.toString().trim()}`);
+          magentaProcess.stdout.on('data', (data) => {
+            magentaOutput += data.toString();
+            console.log(`Magenta: ${data.toString().trim()}`);
           });
           
-          pythonProcess.stderr.on('data', (data) => {
-            pythonError += data.toString();
-            console.error(`Python error: ${data.toString().trim()}`);
+          magentaProcess.stderr.on('data', (data) => {
+            magentaError += data.toString();
+            console.error(`Magenta error: ${data.toString().trim()}`);
           });
           
           // Таймер для отмены процесса при превышении таймаута
           const timeoutId = setTimeout(() => {
             console.error(`Стилизация превысила таймаут ${timeout}ms, завершаем процесс`);
-            pythonProcess.kill('SIGTERM');
+            magentaProcess.kill('SIGTERM');
             reject(new Error('Стилизация заняла слишком много времени'));
           }, timeout);
           
-          pythonProcess.on('close', (code) => {
+          magentaProcess.on('close', (code) => {
             clearTimeout(timeoutId); // Очищаем таймер
             
             if (code !== 0) {
-              console.error(`Python-стилизация завершилась с кодом ${code}`);
-              console.error(`Ошибка: ${pythonError}`);
+              console.error(`Google Magenta завершился с кодом ${code}`);
+              console.error(`Ошибка: ${magentaError}`);
               
-              // Если Python-стилизация не удалась, возвращаем оригинальное изображение
+              // Если Google Magenta не удалась, возвращаем оригинальное изображение
               console.log('Копируем оригинальное изображение как запасной вариант.');
               try {
                 fs.copyFileSync(contentPath, outputPath);
@@ -422,14 +423,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 reject(e);
               }
             } else {
-              console.log('Python успешно применил стиль!');
+              console.log('Google Magenta успешно применил стиль!');
               resolve();
             }
           });
           
-          pythonProcess.on('error', (err) => {
+          magentaProcess.on('error', (err) => {
             clearTimeout(timeoutId);
-            console.error('Ошибка запуска процесса Python:', err);
+            console.error('Ошибка запуска процесса:', err);
             reject(err);
           });
         });
@@ -438,7 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await stylizationPromise;
         
       } catch (error) {
-        console.error('Ошибка при выполнении Python-стилизации:', error);
+        console.error('Ошибка при выполнении Google Magenta:', error);
         // В случае ошибки копируем оригинальное изображение
         fs.copyFileSync(contentPath, outputPath);
       }
