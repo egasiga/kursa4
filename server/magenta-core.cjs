@@ -3,11 +3,14 @@
  * Базовая реализация стилизации изображений с использованием Google Magenta
  */
 
-import tfnode from '@tensorflow/tfjs-node';
-import fs from 'fs';
-import path from 'path';
-import { createCanvas, loadImage } from 'canvas';
-import * as magenta from '@magenta/image';
+// Подключаем TensorFlow.js + Node (для ускорения)
+require('@tensorflow/tfjs-node');
+
+// Импортируем основные библиотеки
+const fs = require('fs');
+const path = require('path');
+const { createCanvas, loadImage } = require('canvas');
+const magenta = require('@magenta/image');
 
 /**
  * Класс для работы с Google Magenta стилизацией
@@ -148,4 +151,4 @@ class MagentaStyleTransfer {
 
 // Создаем и экспортируем экземпляр для использования в других модулях
 const styler = new MagentaStyleTransfer();
-export default styler;
+module.exports = styler;

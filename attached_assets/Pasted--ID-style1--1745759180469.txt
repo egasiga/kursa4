@@ -1,0 +1,64 @@
+Получен запрос на стилизацию изображения
+Изображение и стиль получены. ID стиля: style1
+Путь к файлу стиля: ./styles/1.jpg, styleId: style1, styleNumber: 1
+Исходное изображение сохранено в ./temp/content_1745759165277_5m3b8i.jpg
+Запускаем Google Magenta стилизацию на ./temp/content_1745759165277_5m3b8i.jpg
+Magenta error: /home/runner/workspace/server/magenta-core.cjs:6
+import tfnode from '@tensorflow/tfjs-node';
+^^^^^^
+
+SyntaxError: Cannot use import statement outside a module
+    at wrapSafe (node:internal/modules/cjs/loader:1378:20)
+    at Module._compile (node:internal/modules/cjs/loader:1428:41)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1548:10)
+    at Module.load (node:internal/modules/cjs/loader:1288:32)
+    at Module._load (node:internal/modules/cjs/loader:1104:12)
+    at Module.require (node:internal/modules/cjs/loader:1311:19)
+    at require (node:internal/modules/helpers:179:18)
+    at Object.<anonymous> (/home/runner/workspace/server/cli-stylize.cjs:6:16)
+    at Module._compile (node:internal/modules/cjs/loader:1469:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1548:10)
+
+Node.js v20.18.1
+Процесс стилизации завершился с кодом 1
+Стилизация не удалась: /home/runner/workspace/server/magenta-core.cjs:6
+import tfnode from '@tensorflow/tfjs-node';
+^^^^^^
+
+SyntaxError: Cannot use import statement outside a module
+    at wrapSafe (node:internal/modules/cjs/loader:1378:20)
+    at Module._compile (node:internal/modules/cjs/loader:1428:41)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1548:10)
+    at Module.load (node:internal/modules/cjs/loader:1288:32)
+    at Module._load (node:internal/modules/cjs/loader:1104:12)
+    at Module.require (node:internal/modules/cjs/loader:1311:19)
+    at require (node:internal/modules/helpers:179:18)
+    at Object.<anonymous> (/home/runner/workspace/server/cli-stylize.cjs:6:16)
+    at Module._compile (node:internal/modules/cjs/loader:1469:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1548:10)
+
+Node.js v20.18.1
+Ошибка при выполнении стилизации: Error: Стилизация завершилась с ошибкой: /home/runner/workspace/server/magenta-core.cjs:6
+import tfnode from '@tensorflow/tfjs-node';
+^^^^^^
+
+SyntaxError: Cannot use import statement outside a module
+    at wrapSafe (node:internal/modules/cjs/loader:1378:20)
+    at Module._compile (node:internal/modules/cjs/loader:1428:41)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1548:10)
+    at Module.load (node:internal/modules/cjs/loader:1288:32)
+    at Module._load (node:internal/modules/cjs/loader:1104:12)
+    at Module.require (node:internal/modules/cjs/loader:1311:19)
+    at require (node:internal/modules/helpers:179:18)
+    at Object.<anonymous> (/home/runner/workspace/server/cli-stylize.cjs:6:16)
+    at Module._compile (node:internal/modules/cjs/loader:1469:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1548:10)
+
+Node.js v20.18.1
+    at ChildProcess.<anonymous> (/home/runner/workspace/server/routes.ts:413:24)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+Копирование исходного изображения из-за ошибки стилизации...
+Отправка стилизованного изображения размером: 69408 байт
+1:06:05 PM [express] POST /api/stylize 200 in 91ms :: {"originalImage":"data:image/jpeg;base64,/9j/4…
