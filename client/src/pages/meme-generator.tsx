@@ -15,7 +15,7 @@ import SocialShare from "@/components/social-share";
 import { AiStyle } from "@/components/ai-style-selector";
 import ImageStyleEditor from "@/components/image-editor";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Save, Share2, RotateCcw } from "lucide-react";
+import { Download, Save, Share2, RotateCcw, Plus } from "lucide-react";
 import { MemeTemplate, SavedMeme } from "@shared/schema";
 
 export default function MemeGenerator() {
@@ -25,7 +25,24 @@ export default function MemeGenerator() {
   
   const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(null);
 
-  const [textContent, setTextContent] = useState<{ areaIndex: number; text: string; style: any }[]>([]);
+  // Изменяем структуру textContent для соответствия подходу из коллажей
+  const [textContent, setTextContent] = useState<Array<{
+    id: string;
+    text: string;
+    style: {
+      fontFamily: string;
+      fontSize: number;
+      color: string;
+      strokeColor: string;
+      strokeWidth: number;
+      align: string;
+      offsetX?: number;
+      offsetY?: number;
+    };
+  }>>([]);
+  
+  const [showTextEditor, setShowTextEditor] = useState(true);
+  
   const [filters, setFilters] = useState({
     brightness: 100,
     contrast: 100,
@@ -82,95 +99,77 @@ export default function MemeGenerator() {
     if (templateData) {
       // Создаем объект MemeTemplate из полученных данных
       const template: MemeTemplate = templateData as MemeTemplate;
-      
       setSelectedTemplate(template);
       
-      // Initialize text content from template's text areas
-      const textAreas = template.textAreas as any[] || [];
-      if (Array.isArray(textAreas)) {
-        setTextContent(
-          textAreas.map((area: any, index: number) => ({
-            areaIndex: index,
-            text: area.defaultText || "",
-            style: {
-              fontFamily: "Arial",
-              fontSize: 24,
-              color: "#FFFFFF",
-              strokeColor: "#000000",
-              strokeWidth: 2,
-              align: "center",
-            },
-          }))
-        );
-      }
+      // В новой реализации мы не добавляем текст автоматически
+      // Пользователь будет добавлять текст через кнопку "Add Text"
+      setTextContent([]);
     }
   }, [templateData]);
 
-  const handleTextChange = (areaIndex: number, text: string) => {
-    setTextContent((prevContent) => {
-      const newContent = [...prevContent];
-      const existingIndex = newContent.findIndex((item) => item.areaIndex === areaIndex);
-      
-      if (existingIndex >= 0) {
-        newContent[existingIndex] = { ...newContent[existingIndex], text };
-      } else {
-        newContent.push({
-          areaIndex,
-          text,
-          style: {
-            fontFamily: "Arial",
-            fontSize: 24,
-            color: "#FFFFFF",
-            strokeColor: "#000000",
-            strokeWidth: 2,
-            align: "center",
-            offsetX: 0,
-            offsetY: 0,
-          },
-        });
-      }
-      
-      return newContent;
-    });
+  // Функция для добавления нового текста
+  const handleAddText = () => {
+    const newId = `text-${Date.now()}`;
+    setTextContent((prev) => [
+      ...prev,
+      {
+        id: newId,
+        text: "Add your text here",
+        style: {
+          fontFamily: "Impact",
+          fontSize: 36,
+          color: "#FFFFFF",
+          strokeColor: "#000000",
+          strokeWidth: 4,
+          align: "center",
+          offsetX: 0,
+          offsetY: 0,
+        },
+      },
+    ]);
+    setShowTextEditor(true);
   };
 
-  const handleTextStyleChange = (areaIndex: number, styleKey: string, value: any) => {
-    setTextContent((prevContent) => {
-      const newContent = [...prevContent];
-      const existingIndex = newContent.findIndex((item) => item.areaIndex === areaIndex);
-      
-      if (existingIndex >= 0) {
-        newContent[existingIndex] = {
-          ...newContent[existingIndex],
-          style: {
-            ...newContent[existingIndex].style,
-            [styleKey]: value,
-          },
-        };
-      }
-      
-      return newContent;
-    });
+  // Обновление текста по id (не по areaIndex как раньше)
+  const handleTextChange = (id: string, text: string) => {
+    setTextContent((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, text } : item))
+    );
+  };
+
+  // Обновление стиля текста по id
+  const handleTextStyleChange = (id: string, styleKey: string, value: any) => {
+    setTextContent((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              style: {
+                ...item.style,
+                [styleKey]: value,
+              },
+            }
+          : item
+      )
+    );
   };
   
-  const handleTextPositionChange = (areaIndex: number, offsetX: number, offsetY: number) => {
-    setTextContent((prevContent) => {
-      const newContent = [...prevContent];
-      const existingIndex = newContent.findIndex((item) => item.areaIndex === areaIndex);
-      
-      if (existingIndex >= 0) {
-        newContent[existingIndex] = {
-          ...newContent[existingIndex],
-          style: {
-            ...newContent[existingIndex].style,
-            offsetX,
-            offsetY,
-          },
-        };
-      }
-      
-      return newContent;
-    });
+  // Обновление позиции текста
+  const handleTextPositionChange = (id: string, offsetX: number, offsetY: number) => {
+    setTextContent((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              style: {
+                ...item.style,
+                offsetX,
+                offsetY,
+              },
+            }
+          : item
+      )
+    );
   };
 
   const handleFilterChange = (filterType: keyof typeof filters, value: number) => {
