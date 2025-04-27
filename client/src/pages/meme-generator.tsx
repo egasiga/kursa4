@@ -189,37 +189,98 @@ export default function MemeGenerator() {
       const ctx = canvasRef.getContext("2d");
       if (!ctx) return;
       
+      // Получаем масштаб канваса относительно оригинального изображения
+      // Это значение может быть < 1 для уменьшения или > 1 для увеличения
+      const canvasWidth = canvasRef.width;
+      
+      // Используем дефолтное значение 1200 для ширины шаблона, если не указано
+      const originalWidth = 1200; // Стандартная ширина для мем-шаблонов
+      const canvasScale = canvasWidth / originalWidth;
+      
+      console.log('Масштаб канваса:', canvasScale, 'Ширина:', canvasWidth);
+      
       textContent.forEach((item) => {
         const textAreas = selectedTemplate.textAreas as any[] || [];
         const textArea = textAreas[item.areaIndex];
         if (!textArea) return;
         
-        ctx.font = `${item.style.fontSize}px ${item.style.fontFamily}`;
+        // Настраиваем размер шрифта с учетом масштаба
+        const scaledFontSize = Math.max(14, item.style.fontSize * canvasScale);
+        ctx.font = `bold ${scaledFontSize}px ${item.style.fontFamily}`;
         ctx.textAlign = item.style.align as CanvasTextAlign;
         
-        // Draw text stroke
-        ctx.lineWidth = item.style.strokeWidth;
+        // Применяем масштаб к координатам textArea
+        const scaledX = textArea.x * canvasScale;
+        const scaledWidth = textArea.width * canvasScale;
+        const scaledY = textArea.y * canvasScale;
+        const scaledHeight = textArea.height * canvasScale;
+        
+        // Вычисляем позицию текста с учетом смещения и масштаба
+        const xPos = scaledX + scaledWidth / 2 + (item.style.offsetX || 0) * canvasScale;
+        const yPos = scaledY + scaledHeight / 2 + (item.style.offsetY || 0) * canvasScale;
+        
+        console.log('Отрисовка текста:', item.text, 'позиция:', xPos, yPos, 'размер шрифта:', scaledFontSize);
+        
+        // Настройка стиля для обводки
+        ctx.lineWidth = Math.max(2, item.style.strokeWidth * canvasScale);
         ctx.strokeStyle = item.style.strokeColor;
-        // Вычисляем позицию текста с учетом смещения
-        const xPos = textArea.x + textArea.width / 2 + (item.style.offsetX || 0);
-        const yPos = textArea.y + textArea.height / 2 + (item.style.offsetY || 0);
         
-        // Убедимся, что текст нарисован после обновления изображения
-        ctx.strokeText(
-          item.text,
-          xPos,
-          yPos
-        );
+        // Разбиваем текст на строки, если нужно
+        const maxWidth = scaledWidth * 0.9; // Оставляем немного отступа
+        const lines = wrapText(ctx, item.text, maxWidth);
         
-        // Draw text fill
-        ctx.fillStyle = item.style.color;
-        ctx.fillText(
-          item.text,
-          xPos,
-          yPos
-        );
+        // Рисуем каждую строку текста
+        const lineHeight = scaledFontSize * 1.2;
+        let offsetY = 0;
+        
+        lines.forEach((line, i) => {
+          // Расчет вертикального смещения для многострочного текста
+          const lineY = yPos + offsetY - (lines.length - 1) * lineHeight / 2;
+          
+          // Рисуем обводку
+          ctx.strokeText(line, xPos, lineY);
+          
+          // Рисуем сам текст
+          ctx.fillStyle = item.style.color;
+          ctx.fillText(line, xPos, lineY);
+          
+          offsetY += lineHeight;
+        });
       });
     }, 100);
+  };
+  
+  // Вспомогательная функция для разбиения текста на строки
+  const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+    
+    // Если текст пустой, возвращаем пустой массив
+    if (!text.trim()) return lines;
+    
+    // Если текст короткий или состоит из одного слова, не разбиваем его
+    if (words.length === 1 || ctx.measureText(text).width <= maxWidth) {
+      return [text];
+    }
+    
+    words.forEach(word => {
+      const testLine = currentLine ? currentLine + ' ' + word : word;
+      const testWidth = ctx.measureText(testLine).width;
+      
+      if (testWidth > maxWidth) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    });
+    
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    
+    return lines;
   };
 
 
@@ -321,43 +382,9 @@ export default function MemeGenerator() {
         });
         setIsStyleApplied(true);
         
-        // Отрисовываем текст после обновления изображения с небольшой задержкой,
-        // чтобы изображение успело загрузиться и канвас обновиться
+        // Вызываем нашу общую функцию рендеринга текста
         setTimeout(() => {
-          if (canvasRef) {
-            const ctx = canvasRef.getContext("2d");
-            if (ctx) {
-              textContent.forEach((item) => {
-                const textAreas = selectedTemplate.textAreas as any[] || [];
-                const textArea = textAreas[item.areaIndex];
-                if (!textArea) return;
-                
-                ctx.font = `${item.style.fontSize}px ${item.style.fontFamily}`;
-                ctx.textAlign = item.style.align as CanvasTextAlign;
-                
-                // Draw text stroke
-                ctx.lineWidth = item.style.strokeWidth;
-                ctx.strokeStyle = item.style.strokeColor;
-                // Вычисляем позицию текста с учетом смещения
-                const xPos = textArea.x + textArea.width / 2 + (item.style.offsetX || 0);
-                const yPos = textArea.y + textArea.height / 2 + (item.style.offsetY || 0);
-                
-                ctx.strokeText(
-                  item.text,
-                  xPos,
-                  yPos
-                );
-                
-                // Draw text fill
-                ctx.fillStyle = item.style.color;
-                ctx.fillText(
-                  item.text,
-                  xPos,
-                  yPos
-                );
-              });
-            }
-          }
+          renderTextOnCanvas();
         }, 250);
         
         toast({
