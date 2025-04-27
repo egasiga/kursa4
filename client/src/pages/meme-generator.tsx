@@ -196,13 +196,14 @@ export default function MemeGenerator() {
       return;
     }
     
-    if (!selectedTemplate || !selectedTemplate.textAreas) {
-      console.error('Шаблон или текстовые области не определены');
+    if (!selectedTemplate) {
+      console.error('Шаблон не определен');
       return;
     }
     
+    // Если текстовый контент пуст, это нормально - просто выходим
     if (!textContent || textContent.length === 0) {
-      console.error('Текстовый контент пуст');
+      console.log('Текстовый контент пуст - пропускаем отрисовку текста');
       return;
     }
     
@@ -216,62 +217,33 @@ export default function MemeGenerator() {
     console.log('Canvas размеры:', canvasRef.width, 'x', canvasRef.height);
     
     // Используем отложенный вызов для обеспечения правильной отрисовки
-    // после обновления и полной загрузки изображения
     setTimeout(() => {
-      
-      // Получаем масштаб канваса относительно оригинального изображения
-      // Это значение может быть < 1 для уменьшения или > 1 для увеличения
       const canvasWidth = canvasRef.width;
+      const canvasHeight = canvasRef.height;
+      const canvasScale = canvasWidth / 1200; // Базовый масштаб относительно стандартного размера
       
-      // Используем дефолтное значение 1200 для ширины шаблона, если не указано
-      const originalWidth = 1200; // Стандартная ширина для мем-шаблонов
-      const canvasScale = canvasWidth / originalWidth;
+      console.log('Масштаб канваса:', canvasScale, 'Размеры:', canvasWidth, 'x', canvasHeight);
+      console.log("Отрисовка текста. Элементов:", textContent.length);
       
-      console.log('Масштаб канваса:', canvasScale, 'Ширина:', canvasWidth);
-      
-      console.log("Начинаем отрисовку текста на канвасе. textContent:", textContent);
-      console.log("Текстовые области в шаблоне:", selectedTemplate.textAreas);
-
+      // Проходим по всем текстовым элементам
       textContent.forEach((item) => {
-        const textAreas = selectedTemplate.textAreas as any[] || [];
-        console.log(`Обработка текстовой области для индекса ${item.areaIndex}, текст: "${item.text}"`);
-        const textArea = textAreas[item.areaIndex];
-        if (!textArea) {
-          console.error(`Текстовая область не найдена для индекса ${item.areaIndex}`);
-          return;
-        }
-        console.log(`Найдена текстовая область:`, textArea);
-        
         // Настраиваем размер шрифта с учетом масштаба
-        const scaledFontSize = Math.max(14, item.style.fontSize * canvasScale);
+        const scaledFontSize = Math.max(16, item.style.fontSize * canvasScale);
         ctx.font = `bold ${scaledFontSize}px ${item.style.fontFamily}`;
         ctx.textAlign = item.style.align as CanvasTextAlign;
         
-        // Применяем масштаб к координатам textArea
-        // Для шаблонов мемов, где текст может быть расположен не точно, делаем дополнительную подгонку
-        const originalImageWidth = 1200; // Примерная ширина исходных шаблонов мемов
+        // В новой реализации используем центр изображения как базовую точку
+        const baseX = canvasWidth / 2 + (item.style.offsetX || 0);
+        const baseY = canvasHeight / 2 + (item.style.offsetY || 0);
         
-        // Определим, нужно ли смещение для конкретного шаблона (в зависимости от известного URL)
-        const isImgflipTemplate = selectedTemplate.imageUrl.includes('imgflip.com');
-        
-        // Масштабирование и подгонка координат текста
-        const scaledX = isImgflipTemplate ? canvasWidth * (textArea.x / originalImageWidth) : textArea.x * canvasScale;
-        const scaledWidth = isImgflipTemplate ? canvasWidth * (textArea.width / originalImageWidth) : textArea.width * canvasScale;
-        const scaledY = isImgflipTemplate ? canvasWidth * (textArea.y / originalImageWidth) : textArea.y * canvasScale;
-        const scaledHeight = isImgflipTemplate ? canvasWidth * (textArea.height / originalImageWidth) : textArea.height * canvasScale;
-        
-        // Вычисляем позицию текста с учетом смещения и масштаба
-        const xPos = scaledX + scaledWidth / 2 + (item.style.offsetX || 0) * canvasScale;
-        const yPos = scaledY + scaledHeight / 2 + (item.style.offsetY || 0) * canvasScale;
-        
-        console.log('Отрисовка текста:', item.text, 'позиция:', xPos, yPos, 'размер шрифта:', scaledFontSize);
+        console.log('Отрисовка текста:', item.text, 'позиция:', baseX, baseY, 'шрифт:', ctx.font);
         
         // Настройка стиля для обводки
-        ctx.lineWidth = Math.max(2, item.style.strokeWidth * canvasScale);
+        ctx.lineWidth = Math.max(3, item.style.strokeWidth);
         ctx.strokeStyle = item.style.strokeColor;
         
-        // Разбиваем текст на строки, если нужно
-        const maxWidth = scaledWidth * 0.9; // Оставляем немного отступа
+        // Разбиваем текст на строки
+        const maxWidth = canvasWidth * 0.8; // 80% ширины холста
         const lines = wrapText(ctx, item.text, maxWidth);
         
         // Рисуем каждую строку текста
@@ -279,15 +251,14 @@ export default function MemeGenerator() {
         let offsetY = 0;
         
         lines.forEach((line, i) => {
-          // Расчет вертикального смещения для многострочного текста
-          const lineY = yPos + offsetY - (lines.length - 1) * lineHeight / 2;
+          const lineY = baseY + offsetY - (lines.length - 1) * lineHeight / 2;
           
-          // Рисуем обводку
-          ctx.strokeText(line, xPos, lineY);
+          // Рисуем обводку (увеличенную для лучшей видимости)
+          ctx.strokeText(line, baseX, lineY);
           
           // Рисуем сам текст
           ctx.fillStyle = item.style.color;
-          ctx.fillText(line, xPos, lineY);
+          ctx.fillText(line, baseX, lineY);
           
           offsetY += lineHeight;
         });
@@ -364,23 +335,8 @@ export default function MemeGenerator() {
 
   const handleTemplateSelect = (template: MemeTemplate) => {
     setSelectedTemplate(template);
-    const textAreas = template.textAreas as any[] || [];
-    setTextContent(
-      textAreas.map((area: any, index: number) => ({
-        areaIndex: index,
-        text: area.defaultText || "",
-        style: {
-          fontFamily: "Arial",
-          fontSize: 48,
-          color: "#FFFFFF",
-          strokeColor: "#000000",
-          strokeWidth: 5,
-          align: "center",
-          offsetX: 0,
-          offsetY: 0,
-        },
-      }))
-    );
+    // В новой реализации не создаем текст автоматически
+    setTextContent([]);
   };
 
   const handleResetFilters = () => {
@@ -570,21 +526,43 @@ export default function MemeGenerator() {
                     </TabsList>
                     <div className="p-6">
                       <TabsContent value="text" className="m-0">
-                        <div className="space-y-4">
-                          {(selectedTemplate.textAreas as any[] || []).map((area: any, index: number) => (
-                            <TextEditor
-                              key={index}
-                              areaIndex={index}
-                              label={`Текст ${index + 1}`}
-                              defaultText={area.defaultText || ""}
-                              value={textContent.find((t) => t.areaIndex === index)?.text || ""}
-                              style={textContent.find((t) => t.areaIndex === index)?.style || {}}
-                              onChange={(value) => handleTextChange(index, value)}
-                              onStyleChange={(styleKey, value) => handleTextStyleChange(index, styleKey, value)}
-                              onPositionChange={(offsetX, offsetY) => handleTextPositionChange(index, offsetX, offsetY)}
-                            />
-                          ))}
-                        </div>
+                        {textContent.length > 0 ? (
+                          <div className="space-y-4">
+                            {textContent.map((item) => (
+                              <TextEditor
+                                key={item.id}
+                                areaIndex={0} // используем 0 как фиктивный параметр
+                                textId={item.id}
+                                label={`Текст`}
+                                value={item.text}
+                                style={item.style}
+                                onChange={(value) => handleTextChange(item.id, value)}
+                                onStyleChange={(styleKey, value) => handleTextStyleChange(item.id, styleKey, value)}
+                                onPositionChange={(offsetX, offsetY) => handleTextPositionChange(item.id, offsetX, offsetY)}
+                                onRemove={() => {
+                                  setTextContent((prev) => prev.filter((t) => t.id !== item.id));
+                                }}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-6">
+                            <p className="mb-4 text-muted-foreground">Нет текстовых элементов</p>
+                            <Button onClick={handleAddText} variant="outline" className="gap-2">
+                              <Plus className="w-4 h-4" />
+                              Добавить текст
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {textContent.length > 0 && (
+                          <div className="mt-6 text-center">
+                            <Button onClick={handleAddText} variant="outline" className="gap-2">
+                              <Plus className="w-4 h-4" />
+                              Добавить текст
+                            </Button>
+                          </div>
+                        )}
                       </TabsContent>
                       <TabsContent value="filters" className="m-0">
                         <div className="space-y-6">

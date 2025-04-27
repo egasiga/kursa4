@@ -4,7 +4,20 @@ import { applyFiltersToImage, loadImage } from '@/lib/image-utils';
 
 interface MemeImageEditorProps {
   template: MemeTemplate;
-  textContent: any[];
+  textContent: Array<{
+    id: string;
+    text: string;
+    style: {
+      fontFamily: string;
+      fontSize: number;
+      color: string;
+      strokeColor: string;
+      strokeWidth: number;
+      align: string;
+      offsetX?: number;
+      offsetY?: number;
+    };
+  }>;
   filters: {
     brightness: number;
     contrast: number;
@@ -12,7 +25,7 @@ interface MemeImageEditorProps {
   };
   onCanvasReady: (canvas: HTMLCanvasElement) => void;
   onTextRender: () => void;
-  onUpdateTextPosition?: (index: number, offsetX: number, offsetY: number) => void;
+  onUpdateTextPosition?: (id: string, offsetX: number, offsetY: number) => void;
 }
 
 export default function MemeImageEditor({
@@ -140,47 +153,54 @@ export default function MemeImageEditor({
 
   // Обработчики для перетаскивания текста
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current || !template.textAreas || !onUpdateTextPosition) return;
+    if (!canvasRef.current || !onUpdateTextPosition || !textContent.length) return;
     
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Проверяем, нажали ли мы на текстовую область
-    const textAreas = template.textAreas as any[] || [];
-    const clickedTextIndex = textAreas.findIndex((area, index) => {
-      const areaX = area.x * scale;
-      const areaY = area.y * scale;
-      const areaWidth = area.width * scale;
-      const areaHeight = area.height * scale;
+    // В новой версии нам не нужны textAreas из шаблона
+    // Просто проверяем, попали ли мы в область текстового элемента
+    // Центр canvas как базовая точка + смещение текста
+    const canvasWidth = canvasRef.current.width;
+    const canvasHeight = canvasRef.current.height;
+    
+    // Проходим по всем текстовым элементам и проверяем, попал ли клик в их область
+    let clickedTextId: string | null = null;
+    
+    textContent.forEach(item => {
+      const centerX = canvasWidth / 2 + (item.style.offsetX || 0);
+      const centerY = canvasHeight / 2 + (item.style.offsetY || 0);
       
-      // Получаем смещение из textContent, если оно есть
-      const textItem = textContent.find(t => t.areaIndex === index);
-      const offsetX = textItem?.style?.offsetX || 0;
-      const offsetY = textItem?.style?.offsetY || 0;
+      // Размер области нажатия (зависит от размера шрифта)
+      const hitSize = Math.max(100, item.style.fontSize * 2); 
       
-      const centerX = areaX + areaWidth / 2 + offsetX;
-      const centerY = areaY + areaHeight / 2 + offsetY;
-      
-      // Проверяем, находится ли курсор в пределах текстовой области (с запасом)
-      const hitAreaSize = Math.max(50, Math.min(areaWidth, areaHeight));
-      return (
-        Math.abs(x - centerX) < hitAreaSize / 2 &&
-        Math.abs(y - centerY) < hitAreaSize / 2
-      );
+      if (
+        Math.abs(x - centerX) < hitSize / 2 &&
+        Math.abs(y - centerY) < hitSize / 2
+      ) {
+        clickedTextId = item.id;
+      }
     });
     
-    if (clickedTextIndex !== -1) {
+    if (clickedTextId) {
       setDraggingText({
-        index: clickedTextIndex,
+        index: 0, // индекс больше не используется, но оставим структуру для совместимости
         startX: x,
-        startY: y
+        startY: y,
       });
+      
+      // Сохраняем ID активного текста как атрибут данных для компонента
+      canvasRef.current.dataset.activeTextId = clickedTextId;
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!draggingText || !canvasRef.current || !onUpdateTextPosition) return;
+    
+    // Получаем ID активного текста из атрибута данных
+    const activeTextId = canvasRef.current.dataset.activeTextId;
+    if (!activeTextId) return;
     
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -190,13 +210,15 @@ export default function MemeImageEditor({
     const deltaX = x - draggingText.startX;
     const deltaY = y - draggingText.startY;
     
-    // Получаем текущее смещение для текстовой области
-    const textItem = textContent.find(t => t.areaIndex === draggingText.index);
-    const currentOffsetX = textItem?.style?.offsetX || 0;
-    const currentOffsetY = textItem?.style?.offsetY || 0;
+    // Получаем текущее смещение для активного текста
+    const textItem = textContent.find(t => t.id === activeTextId);
+    if (!textItem) return;
+    
+    const currentOffsetX = textItem.style.offsetX || 0;
+    const currentOffsetY = textItem.style.offsetY || 0;
     
     // Обновляем позицию текста
-    onUpdateTextPosition(draggingText.index, currentOffsetX + deltaX, currentOffsetY + deltaY);
+    onUpdateTextPosition(activeTextId, currentOffsetX + deltaX, currentOffsetY + deltaY);
     
     // Обновляем начальную позицию для следующего движения
     setDraggingText({
