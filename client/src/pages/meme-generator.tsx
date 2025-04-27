@@ -25,25 +25,9 @@ export default function MemeGenerator() {
   
   const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(null);
 
-  // Изменяем структуру textContent для соответствия подходу из коллажей
-  const [textContent, setTextContent] = useState<Array<{
-    id: string;
-    text: string;
-    style: {
-      fontFamily: string;
-      fontSize: number;
-      color: string;
-      strokeColor: string;
-      strokeWidth: number;
-      align: string;
-    };
-    position: {
-      x: number;
-      y: number;
-    };
-  }>>([]);
-  
-  const [showTextEditor, setShowTextEditor] = useState(true);
+  // Временно отключаем функциональность текста
+  const [textContent, setTextContent] = useState<Array<any>>([]);
+  const [showTextEditor, setShowTextEditor] = useState(false);
   
   const [filters, setFilters] = useState({
     brightness: 100,
@@ -109,185 +93,18 @@ export default function MemeGenerator() {
     }
   }, [templateData]);
 
-  // Функция для добавления нового текста (по аналогии с коллажами)
-  const handleAddText = () => {
-    const newId = `text-${Date.now()}`;
-    setTextContent((prev) => [
-      ...prev,
-      {
-        id: newId,
-        text: "Добавьте текст",
-        style: {
-          fontFamily: "Impact",
-          fontSize: 48,
-          color: "#FFFFFF",
-          strokeColor: "#000000",
-          strokeWidth: 5,
-          align: "center",
-        },
-        position: { 
-          x: canvasRef ? canvasRef.width / 2 : 400, 
-          y: canvasRef ? canvasRef.height / 2 : 400 
-        },
-      },
-    ]);
-    setShowTextEditor(true);
-  };
-
-  // Обновление текста по id (не по areaIndex как раньше)
-  const handleTextChange = (id: string, text: string) => {
-    setTextContent((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, text } : item))
-    );
-  };
-
-  // Обновление стиля текста по id
-  const handleTextStyleChange = (id: string, styleKey: string, value: any) => {
-    setTextContent((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              style: {
-                ...item.style,
-                [styleKey]: value,
-              },
-            }
-          : item
-      )
-    );
-  };
-  
-  // Обновление позиции текста (как в коллажах)
-  const handleTextPositionChange = (id: string, newX: number, newY: number) => {
-    setTextContent((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              position: {
-                x: newX,
-                y: newY,
-              },
-            }
-          : item
-      )
-    );
-  };
+  // Заглушки для функций обработки текста (будут полностью переписаны)
+  const handleAddText = () => {};
+  const handleTextChange = (id: string, text: string) => {};
+  const handleTextStyleChange = (id: string, styleKey: string, value: any) => {};
+  const handleTextPositionChange = (id: string, newX: number, newY: number) => {};
+  const renderTextOnCanvas = () => {};
 
   const handleFilterChange = (filterType: keyof typeof filters, value: number) => {
     setFilters((prev) => ({
       ...prev,
       [filterType]: value,
     }));
-    
-    // После изменения фильтров также обновляем текст
-    setTimeout(() => {
-      if (canvasRef) {
-        console.log('Пытаемся обновить текст после изменения фильтров');
-        renderTextOnCanvas();
-      }
-    }, 300);
-  };
-
-  const renderTextOnCanvas = () => {
-    console.log('Вызвана функция renderTextOnCanvas, canvasRef:', canvasRef);
-    
-    // Проверяем все необходимые условия
-    if (!canvasRef) {
-      console.error('Canvas не определен');
-      return;
-    }
-    
-    if (!selectedTemplate) {
-      console.error('Шаблон не определен');
-      return;
-    }
-    
-    // Если текстовый контент пуст, это нормально - просто выходим
-    if (!textContent || textContent.length === 0) {
-      console.log('Текстовый контент пуст - пропускаем отрисовку текста');
-      return;
-    }
-    
-    // Получаем 2D контекст
-    const ctx = canvasRef.getContext("2d");
-    if (!ctx) {
-      console.error('Не удалось получить 2D контекст из canvas');
-      return;
-    }
-    
-    console.log('Canvas размеры:', canvasRef.width, 'x', canvasRef.height);
-    console.log('Текстовый контент:', textContent);
-    
-    textContent.forEach((item) => {
-      // Настраиваем шрифт
-      ctx.font = `bold ${item.style.fontSize}px ${item.style.fontFamily}`;
-      ctx.textAlign = item.style.align as CanvasTextAlign;
-      
-      // Настройка стиля для обводки
-      ctx.lineWidth = item.style.strokeWidth;
-      ctx.strokeStyle = item.style.strokeColor;
-      
-      console.log('Отрисовка текста:', item.text, 'позиция:', item.position?.x, item.position?.y);
-      
-      // Получаем позицию текста
-      const position = item.position || { x: canvasRef.width / 2, y: canvasRef.height / 2 };
-      
-      // Разбиваем текст на строки при необходимости
-      const maxWidth = canvasRef.width * 0.8; // 80% ширины холста
-      const lines = wrapText(ctx, item.text, maxWidth);
-      
-      // Рисуем каждую строку текста
-      const lineHeight = item.style.fontSize * 1.2;
-      let offsetY = 0;
-      
-      lines.forEach((line, i) => {
-        const lineY = position.y + offsetY - (lines.length - 1) * lineHeight / 2;
-        
-        // Рисуем обводку
-        ctx.strokeText(line, position.x, lineY);
-        
-        // Рисуем сам текст
-        ctx.fillStyle = item.style.color;
-        ctx.fillText(line, position.x, lineY);
-        
-        offsetY += lineHeight;
-      });
-    });
-  };
-  
-  // Вспомогательная функция для разбиения текста на строки
-  const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
-    const words = text.split(' ');
-    const lines: string[] = [];
-    let currentLine = '';
-    
-    // Если текст пустой, возвращаем пустой массив
-    if (!text.trim()) return lines;
-    
-    // Если текст короткий или состоит из одного слова, не разбиваем его
-    if (words.length === 1 || ctx.measureText(text).width <= maxWidth) {
-      return [text];
-    }
-    
-    words.forEach(word => {
-      const testLine = currentLine ? currentLine + ' ' + word : word;
-      const testWidth = ctx.measureText(testLine).width;
-      
-      if (testWidth > maxWidth) {
-        lines.push(currentLine);
-        currentLine = word;
-      } else {
-        currentLine = testLine;
-      }
-    });
-    
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-    
-    return lines;
   };
 
 
@@ -374,10 +191,10 @@ export default function MemeGenerator() {
         });
         setIsStyleApplied(true);
         
-        // Вызываем нашу общую функцию рендеринга текста
-        setTimeout(() => {
-          renderTextOnCanvas();
-        }, 250);
+        // Текстовая функциональность отключена
+        // setTimeout(() => {
+        //   renderTextOnCanvas();
+        // }, 250);
         
         toast({
           title: "Стиль применен",
@@ -517,43 +334,10 @@ export default function MemeGenerator() {
                     </TabsList>
                     <div className="p-6">
                       <TabsContent value="text" className="m-0">
-                        {textContent.length > 0 ? (
-                          <div className="space-y-4">
-                            {textContent.map((item) => (
-                              <TextEditor
-                                key={item.id}
-                                areaIndex={0} // используем 0 как фиктивный параметр
-                                textId={item.id}
-                                label={`Текст`}
-                                value={item.text}
-                                style={{...item.style, position: item.position}}
-                                onChange={(value) => handleTextChange(item.id, value)}
-                                onStyleChange={(styleKey, value) => handleTextStyleChange(item.id, styleKey, value)}
-                                onPositionChange={(x, y) => handleTextPositionChange(item.id, x, y)}
-                                onRemove={() => {
-                                  setTextContent((prev) => prev.filter((t) => t.id !== item.id));
-                                }}
-                              />
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-6">
-                            <p className="mb-4 text-muted-foreground">Нет текстовых элементов</p>
-                            <Button onClick={handleAddText} variant="outline" className="gap-2">
-                              <Plus className="w-4 h-4" />
-                              Добавить текст
-                            </Button>
-                          </div>
-                        )}
-                        
-                        {textContent.length > 0 && (
-                          <div className="mt-6 text-center">
-                            <Button onClick={handleAddText} variant="outline" className="gap-2">
-                              <Plus className="w-4 h-4" />
-                              Добавить текст
-                            </Button>
-                          </div>
-                        )}
+                        <div className="text-center py-6">
+                          <p className="mb-4 text-muted-foreground">Функциональность текста временно отключена</p>
+                          <p className="text-sm text-gray-500">Мы работаем над улучшением текстового редактора</p>
+                        </div>
                       </TabsContent>
                       <TabsContent value="filters" className="m-0">
                         <div className="space-y-6">
