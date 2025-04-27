@@ -40,10 +40,43 @@ try {
 // Загружаем библиотеку Magenta Image для работы с изображениями
 const magentaImage = require('@magenta/image');
 
+// Создаем класс-обертку для Google Magenta, чтобы упростить использование
+class MagentaStyler {
+  constructor() {
+    // Создаем объект стилизатора Magenta
+    this.styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork();
+    this.initialized = false;
+  }
+
+  // Инициализация модели
+  async initialize() {
+    if (!this.initialized) {
+      console.log('Инициализация Google Magenta стилизатора...');
+      await this.styleTransfer.initialize();
+      this.initialized = true;
+      console.log('Google Magenta стилизатор инициализирован!');
+    }
+  }
+
+  // Стилизация изображения
+  async stylize(contentImage, styleImage, styleStrength = 1.0) {
+    // Проверяем, что модель инициализирована
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    console.log('Применяем стилизацию Google Magenta...');
+    return await this.styleTransfer.stylize(contentImage, styleImage, styleStrength);
+  }
+}
+
+// Создаем глобальный экземпляр класса
+const magentaStyler = new MagentaStyler();
+
 // Константы для настройки стилизации
 const STYLE_STRENGTH = 1.0; // От 0 до 1.0, где 1.0 - максимальная сила стиля
-const MAX_IMAGE_SIZE = 512; // Увеличиваем до 512x512 для лучшего качества изображения
-const STYLIZATION_TIMEOUT = 120000; // Увеличиваем таймаут до 2 минут для гарантированного завершения обработки
+const MAX_IMAGE_SIZE = 384; // Уменьшаем размер для ускорения стилизации
+const STYLIZATION_TIMEOUT = 120000; // Оставляем таймаут на 2 минутах
 
 // Функция для загрузки изображения с помощью Canvas API (совместимо с TensorFlow.js)
 async function loadCanvasImage(imagePath) {
@@ -114,7 +147,7 @@ async function loadAndProcessImage(imagePath) {
   }
 }
 
-// Основная функция для применения стиля Google Magenta
+// Основная функция для применения стиля Google Magenta с использованием нашего класса-обертки
 async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, styleStrength = STYLE_STRENGTH) {
   try {
     console.log(`Начинаем стилизацию Google Magenta...`);
@@ -123,25 +156,21 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     console.log(`Выходной путь: ${outputPath}`);
     console.log(`Сила стиля: ${styleStrength}`);
 
-    // Загружаем изображения с помощью Canvas API
+    // Инициализируем Google Magenta стилизатор
+    await magentaStyler.initialize();
+
+    // Загружаем изображения с помощью Canvas API (с уменьшенным размером)
     const contentCanvasImage = await loadCanvasImage(contentImagePath);
     const styleCanvasImage = await loadCanvasImage(styleImagePath);
-
-    // Создаем объект стилизатора Magenta, не указывая бэкенд, чтобы использовать настройки по умолчанию
-    const styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork();
-
-    // Загружаем предобученную модель (это происходит автоматически)
-    console.log('Загружаем модель стилизации Magenta...');
-    await styleTransfer.initialize();
     
-    // Применяем стилизацию с Canvas изображениями с таймаутом
+    // Применяем стилизацию с таймаутом
     console.log('Применяем стилизацию...');
     
     // Создаем Promise с таймаутом
     const stylizePromise = Promise.race([
-      styleTransfer.stylize(contentCanvasImage, styleCanvasImage, styleStrength),
+      magentaStyler.stylize(contentCanvasImage, styleCanvasImage, styleStrength),
       new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Таймаут стилизации')), STYLIZATION_TIMEOUT);
+        setTimeout(() => reject(new Error('Стилизация превысила таймаут ' + STYLIZATION_TIMEOUT + 'ms, завершаем процесс')), STYLIZATION_TIMEOUT);
       })
     ]);
     
@@ -163,56 +192,52 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
   } catch (error) {
     console.error(`Ошибка при применении стиля Magenta: ${error.message}`);
 
-    // В случае ошибки, применяем запасной вариант с более простым подходом
+    // В случае ошибки, применяем запасной вариант с прямым указанием URL моделей
     try {
-      console.log('Пробуем альтернативный метод стилизации Magenta...');
+      console.log('Пробуем альтернативный метод стилизации Magenta с указанием URL...');
 
-      // Создаем объект стилизатора с указанием URL к моделям
-      const simpleStyleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
+      // Создаем объект стилизатора с явным указанием URL моделей
+      const backupStyler = new MagentaStyler();
+      backupStyler.styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
         modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json'
-        // Не указываем бэкенд, чтобы использовать настройку по умолчанию
       });
-
-      await simpleStyleTransfer.initialize();
       
-      // Повторная попытка загрузки и стилизации с Canvas
-      try {
-        const contentCanvas = await loadCanvasImage(contentImagePath);
-        const styleCanvas = await loadCanvasImage(styleImagePath);
-        
-        // Применяем стилизацию с таймаутом
-        const stylizePromise = Promise.race([
-          simpleStyleTransfer.stylize(contentCanvas, styleCanvas, styleStrength),
-          new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Таймаут альтернативной стилизации')), STYLIZATION_TIMEOUT);
-          })
-        ]);
-        
-        const result = await stylizePromise;
-        
-        // Преобразуем результат в Jimp и сохраняем
-        const resultImage = new Jimp({
-          data: result.data,
-          width: result.width,
-          height: result.height
-        });
-        
-        await resultImage.quality(95).writeAsync(outputPath);
-        
-        console.log('Альтернативная стилизация Magenta успешно применена');
-        return true;
-      } catch (canvasError) {
-        console.error(`Ошибка при стилизации с Canvas: ${canvasError.message}`);
-        throw canvasError;
-      }
+      // Инициализируем запасной стилизатор
+      await backupStyler.styleTransfer.initialize();
+      
+      // Загружаем уменьшенные изображения
+      const contentCanvas = await loadCanvasImage(contentImagePath);
+      const styleCanvas = await loadCanvasImage(styleImagePath);
+      
+      // Применяем стилизацию с таймаутом
+      const stylizePromise = Promise.race([
+        backupStyler.styleTransfer.stylize(contentCanvas, styleCanvas, styleStrength),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Запасная стилизация превысила таймаут')), STYLIZATION_TIMEOUT);
+        })
+      ]);
+      
+      const result = await stylizePromise;
+      
+      // Преобразуем результат в Jimp и сохраняем
+      const resultImage = new Jimp({
+        data: result.data,
+        width: result.width,
+        height: result.height
+      });
+      
+      await resultImage.quality(95).writeAsync(outputPath);
+      
+      console.log('Альтернативная стилизация Magenta успешно применена');
+      return true;
     } catch (fallbackError) {
       console.error(`Ошибка запасного варианта Magenta: ${fallbackError.message}`);
       
-      // В случае повторной ошибки, просто копируем исходное изображение
+      // В случае повторной ошибки, выводим предупреждение, что копируем исходное изображение
       try {
-        console.log('Копируем исходное изображение как запасной вариант');
+        console.log('Не удалось применить стилизацию. Копируем исходное изображение как запасной вариант.');
         fs.copyFileSync(contentImagePath, outputPath);
-        return true;
+        return false; // Возвращаем false, чтобы показать, что стилизация не удалась
       } catch (copyError) {
         console.error(`Ошибка копирования исходного изображения: ${copyError.message}`);
         return false;

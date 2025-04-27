@@ -410,18 +410,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           magentaProcess.on('close', (code) => {
             clearTimeout(timeoutId); // Очищаем таймер
             
+            // Проверяем существование выходного файла независимо от кода выхода
+            if (fs.existsSync(outputPath)) {
+              console.log(`Стилизованный файл ${outputPath} существует, проверяем его`);
+              
+              // Проверяем размер файла, чтобы убедиться, что стилизация была применена
+              const stats = fs.statSync(outputPath);
+              
+              if (stats.size > 0) {
+                console.log(`Стилизованный файл имеет размер ${stats.size} байт`);
+                console.log('Google Magenta успешно применил стиль!');
+                resolve();
+                return;
+              } else {
+                console.error('Стилизованный файл существует, но имеет нулевой размер');
+              }
+            }
+            
             if (code !== 0) {
               console.error(`Google Magenta завершился с кодом ${code}`);
               console.error(`Ошибка: ${magentaError}`);
               
-              // Если Google Magenta не удалась, возвращаем оригинальное изображение
-              console.log('Копируем оригинальное изображение как запасной вариант.');
-              try {
-                fs.copyFileSync(contentPath, outputPath);
-                resolve();
-              } catch (e) {
-                reject(e);
-              }
+              // Если Google Magenta не удалась, и стилизованный файл не существует,
+              // возвращаем сообщение об ошибке вместо копирования исходного изображения
+              reject(new Error('Google Magenta не смог применить стиль'));
             } else {
               console.log('Google Magenta успешно применил стиль!');
               resolve();
