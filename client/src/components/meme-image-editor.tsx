@@ -38,9 +38,9 @@ export default function MemeImageEditor({
     renderImage.current = (img: HTMLImageElement) => {
       if (!canvasRef.current) return;
       
-      // Определяем максимальные размеры для canvas
-      const maxWidth = 450;
-      const maxHeight = 600;
+      // Определяем максимальные размеры для canvas (увеличиваем размер)
+      const maxWidth = 800;
+      const maxHeight = 800;
       
       // Вычисляем масштаб для изображения
       let newWidth = img.width;
@@ -231,7 +231,7 @@ export default function MemeImageEditor({
             <img 
               src={template.imageUrl} 
               alt={template.name || "Шаблон мема"} 
-              className="w-full max-w-[450px] h-auto rounded-md border border-gray-200"
+              className="w-full max-w-[800px] h-auto rounded-md border border-gray-200"
             />
           )}
           
@@ -246,11 +246,7 @@ export default function MemeImageEditor({
           />
         </div>
       )}
-      <div className="mt-2 text-xs text-gray-500">
-        {!loading && textContent.length > 0 && (
-          <span>Подсказка: Нажмите и перетащите текст для изменения его положения</span>
-        )}
-      </div>
+
     </div>
   );
 }

@@ -210,10 +210,17 @@ export default function MemeGenerator() {
         ctx.textAlign = item.style.align as CanvasTextAlign;
         
         // Применяем масштаб к координатам textArea
-        const scaledX = textArea.x * canvasScale;
-        const scaledWidth = textArea.width * canvasScale;
-        const scaledY = textArea.y * canvasScale;
-        const scaledHeight = textArea.height * canvasScale;
+        // Для шаблонов мемов, где текст может быть расположен не точно, делаем дополнительную подгонку
+        const originalImageWidth = 1200; // Примерная ширина исходных шаблонов мемов
+        
+        // Определим, нужно ли смещение для конкретного шаблона (в зависимости от известного URL)
+        const isImgflipTemplate = selectedTemplate.imageUrl.includes('imgflip.com');
+        
+        // Масштабирование и подгонка координат текста
+        const scaledX = isImgflipTemplate ? canvasWidth * (textArea.x / originalImageWidth) : textArea.x * canvasScale;
+        const scaledWidth = isImgflipTemplate ? canvasWidth * (textArea.width / originalImageWidth) : textArea.width * canvasScale;
+        const scaledY = isImgflipTemplate ? canvasWidth * (textArea.y / originalImageWidth) : textArea.y * canvasScale;
+        const scaledHeight = isImgflipTemplate ? canvasWidth * (textArea.height / originalImageWidth) : textArea.height * canvasScale;
         
         // Вычисляем позицию текста с учетом смещения и масштаба
         const xPos = scaledX + scaledWidth / 2 + (item.style.offsetX || 0) * canvasScale;
@@ -326,10 +333,10 @@ export default function MemeGenerator() {
         text: area.defaultText || "",
         style: {
           fontFamily: "Arial",
-          fontSize: 24,
+          fontSize: 36,
           color: "#FFFFFF",
           strokeColor: "#000000",
-          strokeWidth: 2,
+          strokeWidth: 3,
           align: "center",
           offsetX: 0,
           offsetY: 0,
