@@ -2,6 +2,10 @@
  * Реализация стилизации изображений с использованием официальной библиотеки Google Magenta
  */
 
+// Самым первым делом подключаем TensorFlow Node - это ускорит стилизацию
+// согласно рекомендации в предупреждении TensorFlow
+require('@tensorflow/tfjs-node');
+
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -14,14 +18,8 @@ const { createCanvas, loadImage, ImageData } = canvas;
 // Добавляем ImageData в глобальную область видимости для Magenta
 global.ImageData = ImageData;
 
-// Подключаем TensorFlow.js Node для ускорения работы модели
-try {
-  require('@tensorflow/tfjs-node');
-  console.log('TensorFlow.js Node and Canvas successfully loaded');
-} catch (error) {
-  console.warn('Ошибка загрузки TensorFlow.js Node:', error.message);
-  console.warn('Стилизация будет работать медленнее');
-}
+// Сообщаем, что TensorFlow.js Node уже загружен в начале файла
+console.log('TensorFlow.js Node and Canvas successfully loaded');
 
 // Устанавливаем зависимость @magenta/image с помощью npm (это правильная библиотека для стилизации изображений)
 try {
@@ -43,7 +41,7 @@ const magentaImage = require('@magenta/image');
 
 // Константы для настройки стилизации
 const STYLE_STRENGTH = 1.0; // От 0 до 1.0, где 1.0 - максимальная сила стиля
-const MAX_IMAGE_SIZE = 384; // Оптимальный размер для баланса между качеством и производительностью
+const MAX_IMAGE_SIZE = 512; // Увеличиваем до 512x512 для лучшего качества изображения
 const STYLIZATION_TIMEOUT = 120000; // Увеличиваем таймаут до 2 минут для гарантированного завершения обработки
 
 // Функция для загрузки изображения с помощью Canvas API (совместимо с TensorFlow.js)
