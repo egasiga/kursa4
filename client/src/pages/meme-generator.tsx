@@ -107,23 +107,25 @@ export default function MemeGenerator() {
     }
   }, [templateData]);
 
-  // Функция для добавления нового текста
+  // Функция для добавления нового текста (по аналогии с коллажами)
   const handleAddText = () => {
     const newId = `text-${Date.now()}`;
     setTextContent((prev) => [
       ...prev,
       {
         id: newId,
-        text: "Add your text here",
+        text: "Добавьте текст",
         style: {
           fontFamily: "Impact",
-          fontSize: 36,
+          fontSize: 48,
           color: "#FFFFFF",
           strokeColor: "#000000",
-          strokeWidth: 4,
+          strokeWidth: 5,
           align: "center",
-          offsetX: 0,
-          offsetY: 0,
+        },
+        position: { 
+          x: canvasRef ? canvasRef.width / 2 : 400, 
+          y: canvasRef ? canvasRef.height / 2 : 400 
         },
       },
     ]);
@@ -154,17 +156,16 @@ export default function MemeGenerator() {
     );
   };
   
-  // Обновление позиции текста
-  const handleTextPositionChange = (id: string, offsetX: number, offsetY: number) => {
+  // Обновление позиции текста (как в коллажах)
+  const handleTextPositionChange = (id: string, newX: number, newY: number) => {
     setTextContent((prev) =>
       prev.map((item) =>
         item.id === id
           ? {
               ...item,
-              style: {
-                ...item.style,
-                offsetX,
-                offsetY,
+              position: {
+                x: newX,
+                y: newY,
               },
             }
           : item
