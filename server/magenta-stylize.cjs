@@ -4,7 +4,9 @@
 
 // Самым первым делом подключаем TensorFlow Node - это ускорит стилизацию
 // согласно рекомендации в предупреждении TensorFlow
-require('@tensorflow/tfjs-node');
+const tf = require('@tensorflow/tfjs-node');
+console.log('TensorFlow.js Node версия:', tf.version);
+console.log('TensorFlow.js бэкенд:', tf.getBackend());
 
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -126,8 +128,10 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     const contentCanvasImage = await loadCanvasImage(contentImagePath);
     const styleCanvasImage = await loadCanvasImage(styleImagePath);
 
-    // Создаем объект стилизатора Magenta
-    const styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork();
+    // Создаем объект стилизатора Magenta с явным указанием бэкенда tensorflow
+    const styleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
+      backend: 'tensorflow' // Указываем использовать TensorFlow.js Node в качестве бэкенда
+    });
 
     // Загружаем предобученную модель (это происходит автоматически)
     console.log('Загружаем модель стилизации Magenta...');
@@ -166,10 +170,10 @@ async function applyMagentaStyle(contentImagePath, styleImagePath, outputPath, s
     try {
       console.log('Пробуем альтернативный метод стилизации Magenta...');
 
-      // Создаем объект стилизатора с явно указанным бэкендом CPU
+      // Создаем объект стилизатора с явно указанным бэкендом tensorflow для использования TensorFlow.js Node
       const simpleStyleTransfer = new magentaImage.ArbitraryStyleTransferNetwork({
         modelUrl: 'https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/model.json',
-        backend: 'cpu'
+        backend: 'tensorflow' // Используем TensorFlow.js Node для улучшения производительности
       });
 
       await simpleStyleTransfer.initialize();
